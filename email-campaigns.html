@@ -510,7 +510,7 @@ function handleImageUpload(e, idx) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    compressImage(ev.target.result, { maxPx: 480, quality: 0.7, targetBytes: 35 * 1024 }, dataUrl => {
+    compressImage(ev.target.result, { maxPx: 360, quality: 0.7, targetBytes: 20 * 1024 }, dataUrl => {
       imageUploads[idx] = dataUrl;
       const slotEl = document.getElementById(`slot_${idx}`);
       const imgEl  = document.getElementById(`slotImg_${idx}`);
@@ -1147,7 +1147,7 @@ function handleExtraImageUpload(e, secId, slotKey) {
   if (!sec) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    compressImage(ev.target.result, { maxPx: 480, quality: 0.7, targetBytes: 35 * 1024 }, dataUrl => {
+    compressImage(ev.target.result, { maxPx: 360, quality: 0.7, targetBytes: 20 * 1024 }, dataUrl => {
       sec.imgUploads[slotKey] = dataUrl;
       const imgEl  = document.getElementById(`xslotImg_${secId}_${slotKey}`);
       const slotEl = document.getElementById(`xslot_${secId}_${slotKey}`);
