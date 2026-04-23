@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cleaning Tool – Batch Watermark</title>
+  <link rel="icon" type="image/png" href="icon-cabernet.png">
+  <script src="lang.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8f4ec;
+      --surface: #fffaf3;
+      --surface-2: #f3ede3;
+      --header: #f7f3ec;
+      --text: #221815;
+      --muted: #8d96a3;
+      --border: #e4dbcf;
+      --accent: #7d1026;
+      --accent-2: #5f0b1c;
+      --accent-soft: #efe2cf;
+      --shadow: rgba(69, 38, 26, 0.08);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header { background: var(--header); border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px var(--shadow); }
+    .header-inner { max-width: 1100px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .header-inner h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+    .hamburger { display: none; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 20px; cursor: pointer; color: var(--accent); line-height: 1; box-shadow: none; }
+    .header-nav { display: flex; gap: 2px; align-items: center; }
+    .nav-link { padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; display: inline-block; white-space: nowrap; }
+    .nav-link:hover { color: var(--accent); }
+    .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); }
+    @media (max-width: 760px) {
+      .hamburger { display: inline-block; }
+      .header-nav { display: none; flex-direction: column; align-items: stretch; width: 100%; padding: 6px 0; border-top: 1px solid var(--border); margin-top: 6px; }
+      .header-nav.open { display: flex; }
+      .nav-link { border-bottom: none; border-radius: 8px; padding: 10px 12px; }
+      .nav-link.active { background: #f0e5d8; }
+    }
+
+    main { padding: 18px 20px; max-width: 1100px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px; box-shadow: 0 8px 24px var(--shadow); }
+    .card h2 { margin: 0 0 10px; font-size: 14px; color: var(--accent); }
+    .hint { font-size: 12px; color: #7e756d; margin-top: 6px; line-height: 1.35; }
+
+    .drop { border: 2px dashed #d8c9b7; background: var(--surface-2); border-radius: 14px; padding: 14px; text-align: center; cursor: pointer; user-select: none; }
+    .drop.dragover { border-color: var(--accent); background: #f0e5d8; }
+    .drop strong { display: block; font-size: 13px; color: var(--accent); }
+    .drop span { display: block; font-size: 12px; color: #756d66; margin-top: 4px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    label { display: block; font-size: 12px; color: var(--text); margin-bottom: 6px; font-weight: 600; }
+
+    input[type="file"], select, input[type="range"], input[type="number"] {
+      width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px; font-size: 13px; background: #fff; color: var(--text);
+    }
+    input[type="range"] { padding: 10px 8px; }
+    .inline { display: flex; gap: 10px; align-items: center; }
+    .pill { font-size: 12px; color: var(--accent); background: #fff; border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; min-width: 42px; text-align: center; }
+
+    .btnbar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+    button { border: 1px solid var(--accent); background: var(--accent); color: #fff; padding: 10px 12px; border-radius: 14px; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(125,16,38,0.15); }
+    button.secondary { background: #fff; color: var(--accent); border-color: var(--border); box-shadow: none; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .list { display: grid; gap: 12px; }
+    .item { display: grid; grid-template-columns: 160px 1fr; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 16px; background: #fffdf9; }
+    @media (max-width: 560px) { .item { grid-template-columns: 1fr; } }
+
+    .thumb { width: 160px; aspect-ratio: 4 / 3; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; background: #f6f0e6; display: flex; align-items: center; justify-content: center; }
+    .thumb canvas { width: 100%; height: 100%; display: block; }
+
+    .meta { display: flex; flex-direction: column; gap: 6px; }
+    .meta .name { font-size: 13px; font-weight: 600; color: var(--accent); word-break: break-word; }
+    .meta .sub { font-size: 12px; color: #7e756d; }
+    .meta .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+    .meta .actions a, .meta .actions button { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border); background: #fff; color: var(--accent); font-size: 13px; cursor: pointer; box-shadow: none; }
+    .meta .actions button.danger { border-color: #e7c6cb; background: #fff; color: #8c2436; }
+
+    .ok { color: #065f46; }
+
+    footer { padding: 14px 20px; color: #7e756d; font-size: 12px; text-align: center; border-top: 1px solid var(--border); background: var(--header); margin-top: 18px; }
+
+    /* Mask editor */
+    .mask-wrap { position: relative; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; touch-action: none; }
+    #imgCanvas { display: block; width: 100%; }
+    #paintCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1><img src="icon-logotype-cabernet.png" style="height:28px;"></h1>
+    <button class="hamburger" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <nav class="header-nav" id="headerNav">
+      <a href="index.html" class="nav-link" data-i18n="nav.watermark">Watermark Tool</a>
+      <a href="collage.html" class="nav-link" data-i18n="nav.collage">Collage</a>
+      <a href="email-campaigns.html" class="nav-link" data-i18n="nav.email">Email Campaigns</a>
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="bg">BG</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+
+    <!-- LEFT PANEL -->
+    <section class="card">
+      <h2 data-i18n="cl.step1">1) Add photos</h2>
+      <div id="drop" class="drop" tabindex="0">
+        <strong data-i18n="drop.strong">Drag &amp; drop photos here</strong>
+        <span data-i18n="drop.span">or click to select multiple images</span>
+      </div>
+      <input id="photosInput" type="file" accept="image/*" multiple style="display:none" />
+      <div class="hint" data-i18n="cl.addHint">Load the photos you want to remove the watermark from.</div>
+
+      <hr style="border:none;border-top:1px solid #eef2f7;margin:14px 0;">
+
+      <h2 data-i18n="cl.step2">2) Mark watermark area</h2>
+      <div class="hint" data-i18n="cl.paintHint">Paint or draw a rectangle over the watermark. The same area is applied to all photos.</div>
+
+      <div id="maskEditorWrap" style="display:none; margin-top:10px;">
+        <div class="mask-wrap">
+          <canvas id="imgCanvas"></canvas>
+          <canvas id="paintCanvas"></canvas>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label data-i18n="cl.tool">Tool</label>
+          <select id="maskTool">
+            <option value="rect" selected data-i18n="cl.rect">Rectangle</option>
+            <option value="brush" data-i18n="cl.brush">Brush</option>
+          </select>
+        </div>
+        <div>
+          <label data-i18n="cl.brushSize">Brush size</label>
+          <div class="inline">
+            <input id="brushSize" type="range" min="5" max="120" value="25" />
+            <span id="brushSizeVal" class="pill">25</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btnbar">
+        <button id="clearMask" class="secondary" type="button" data-i18n="cl.clearMask">Clear mask</button>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #eef2f7;margin:14px 0;">
+
+      <div class="hint" style="margin-bottom:8px;">
+        Want better results for logos &amp; text?
+        <a href="cleaning2.html" style="color:var(--accent);font-weight:700;">Try Cleaning Tool 2 →</a>
+        (exemplar-based, experimental)
+      </div>
+      <div class="btnbar">
+        <button id="processAll" type="button" disabled data-i18n="cl.remove">Remove watermarks</button>
+        <button id="downloadAll" type="button" disabled data-i18n="btn.downloadZip">Download all (ZIP)</button>
+        <button id="clearAll" class="secondary" type="button" data-i18n="btn.clear">Clear</button>
+      </div>
+
+      <div id="status" class="hint" style="margin-top:10px;"></div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <section class="card">
+      <h2 data-i18n="cl.step3">3) Previews &amp; download</h2>
+      <div id="count" class="hint" data-i18n="cl.count.none">No photos added yet.</div>
+      <div id="list" class="list" style="margin-top:10px;"></div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  &copy; 2026
+  <a href="https://www.urbanestate.bg/home" target="_blank">Urban Estate</a>
+  <span data-i18n="footer.and">and</span>
+  <a href="https://www.pepapetrovaadvisory.com" target="_blank">Pepa Petrova Advisory</a>.
+  <span data-i18n="footer.rights">All rights reserved.</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+  const drop          = document.getElementById('drop');
+  const photosInput   = document.getElementById('photosInput');
+  const maskEditorWrap= document.getElementById('maskEditorWrap');
+  const imgCanvas     = document.getElementById('imgCanvas');
+  const paintCanvas   = document.getElementById('paintCanvas');
+  const maskToolEl    = document.getElementById('maskTool');
+  const brushSizeEl   = document.getElementById('brushSize');
+  const brushSizeValEl= document.getElementById('brushSizeVal');
+  const processAllBtn = document.getElementById('processAll');
+  const downloadAllBtn= document.getElementById('downloadAll');
+  const clearAllBtn   = document.getElementById('clearAll');
+  const clearMaskBtn  = document.getElementById('clearMask');
+  const listEl        = document.getElementById('list');
+  const countEl       = document.getElementById('count');
+  const statusEl      = document.getElementById('status');
+
+  const imgCtx   = imgCanvas.getContext('2d');
+  const paintCtx = paintCanvas.getContext('2d', { willReadFrequently: true });
+
+  const photos = [];
+  let isDrawing = false;
+  let rectStart = null;
+  let committedMask = null; // ImageData of the confirmed mask
+
+  // ── Utilities ────────────────────────────────────────────────────────────
+
+  function setStatus(msg, ok = false) {
+    statusEl.textContent = msg || '';
+    statusEl.className = 'hint' + (ok ? ' ok' : '');
+  }
+
+  function safeBase(name) {
+    const dot = name.lastIndexOf('.');
+    return (dot > 0 ? name.slice(0, dot) : name).replace(/[^\w\-]+/g, '_');
+  }
+
+  function updateCount() {
+    const n = photos.length;
+    countEl.removeAttribute('data-i18n');
+    countEl.textContent = n === 0 ? _T('cl.count.none') : _T('cl.count.loaded', { n });
+    processAllBtn.disabled = n === 0;
+  }
+
+  // ── Photo loading ─────────────────────────────────────────────────────────
+
+  async function addFiles(fileList) {
+    const files = [...fileList].filter(f => f.type.startsWith('image/'));
+    if (!files.length) return;
+    setStatus(`Loading ${files.length} image(s)…`);
+    const wasEmpty = photos.length === 0;
+    for (const f of files) {
+      try {
+        const bitmap = await createImageBitmap(f);
+        photos.push({ name: f.name, bitmap, processedBitmap: null, canvasEl: document.createElement('canvas'), toggleBtn: null });
+      } catch (e) { console.warn('Failed to load', f.name, e); }
+    }
+    setStatus(`Loaded ${files.length} image(s).`, true);
+    rebuildList();
+    if (wasEmpty && photos.length > 0) initMaskEditor();
+  }
+
+  // ── Mask editor ───────────────────────────────────────────────────────────
+
+  const EDITOR_MAX_W = 328;
+
+  function initMaskEditor() {
+    const p = photos[0];
+    if (!p) return;
+    const scale = Math.min(1, EDITOR_MAX_W / p.bitmap.width);
+    const w = Math.round(p.bitmap.width * scale);
+    const h = Math.round(p.bitmap.height * scale);
+    imgCanvas.width  = paintCanvas.width  = w;
+    imgCanvas.height = paintCanvas.height = h;
+    imgCtx.drawImage(p.bitmap, 0, 0, w, h);
+    paintCtx.clearRect(0, 0, w, h);
+    committedMask = paintCtx.getImageData(0, 0, w, h);
+    maskEditorWrap.style.display = 'block';
+  }
+
+  function getPos(e) {
+    const r = paintCanvas.getBoundingClientRect();
+    const sx = paintCanvas.width  / r.width;
+    const sy = paintCanvas.height / r.height;
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - r.left) * sx, y: (src.clientY - r.top) * sy };
+  }
+
+  function paintBrush(pos) {
+    const r = parseInt(brushSizeEl.value) / 2;
+    paintCtx.fillStyle = 'rgba(220,40,40,0.55)';
+    paintCtx.beginPath();
+    paintCtx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+    paintCtx.fill();
+    committedMask = paintCtx.getImageData(0, 0, paintCanvas.width, paintCanvas.height);
+  }
+
+  function drawRectPreview(pos) {
+    if (!rectStart) return;
+    paintCtx.putImageData(committedMask, 0, 0);
+    paintCtx.fillStyle = 'rgba(220,40,40,0.4)';
+    paintCtx.fillRect(
+      Math.min(rectStart.x, pos.x), Math.min(rectStart.y, pos.y),
+      Math.abs(pos.x - rectStart.x), Math.abs(pos.y - rectStart.y)
+    );
+  }
+
+  function commitRect(pos) {
+    if (!rectStart) return;
+    paintCtx.putImageData(committedMask, 0, 0);
+    paintCtx.fillStyle = 'rgba(220,40,40,0.55)';
+    paintCtx.fillRect(
+      Math.min(rectStart.x, pos.x), Math.min(rectStart.y, pos.y),
+      Math.abs(pos.x - rectStart.x), Math.abs(pos.y - rectStart.y)
+    );
+    committedMask = paintCtx.getImageData(0, 0, paintCanvas.width, paintCanvas.height);
+    rectStart = null;
+  }
+
+  // Mouse
+  paintCanvas.addEventListener('mousedown', e => {
+    e.preventDefault(); isDrawing = true;
+    const pos = getPos(e);
+    if (maskToolEl.value === 'brush') paintBrush(pos); else rectStart = pos;
+  });
+  paintCanvas.addEventListener('mousemove', e => {
+    if (!isDrawing) return;
+    const pos = getPos(e);
+    if (maskToolEl.value === 'brush') paintBrush(pos); else drawRectPreview(pos);
+  });
+  paintCanvas.addEventListener('mouseup', e => {
+    if (!isDrawing) return; isDrawing = false;
+    if (maskToolEl.value === 'rect') commitRect(getPos(e));
+  });
+  paintCanvas.addEventListener('mouseleave', e => {
+    if (!isDrawing) return; isDrawing = false;
+    if (maskToolEl.value === 'rect') commitRect(getPos(e));
+  });
+
+  // Touch
+  paintCanvas.addEventListener('touchstart',  e => { e.preventDefault(); isDrawing = true; const p = getPos(e); if (maskToolEl.value === 'brush') paintBrush(p); else rectStart = p; }, { passive: false });
+  paintCanvas.addEventListener('touchmove',   e => { e.preventDefault(); if (!isDrawing) return; const p = getPos(e); if (maskToolEl.value === 'brush') paintBrush(p); else drawRectPreview(p); }, { passive: false });
+  paintCanvas.addEventListener('touchend',    e => { e.preventDefault(); isDrawing = false; if (maskToolEl.value === 'rect') commitRect(getPos(e)); }, { passive: false });
+
+  clearMaskBtn.addEventListener('click', () => {
+    paintCtx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+    committedMask = paintCtx.getImageData(0, 0, paintCanvas.width, paintCanvas.height);
+    setStatus('Mask cleared.');
+  });
+
+  brushSizeEl.addEventListener('input', () => { brushSizeValEl.textContent = brushSizeEl.value; });
+
+  // ── Inpainting ────────────────────────────────────────────────────────────
+
+  function scaleMaskToSize(maskImgData, targetW, targetH) {
+    const src = document.createElement('canvas');
+    src.width  = maskImgData.width;
+    src.height = maskImgData.height;
+    src.getContext('2d').putImageData(maskImgData, 0, 0);
+    const dst = document.createElement('canvas');
+    dst.width  = targetW;
+    dst.height = targetH;
+    const ctx = dst.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(src, 0, 0, targetW, targetH);
+    return ctx.getImageData(0, 0, targetW, targetH);
+  }
+
+  function performInpaint(imageData, scaledMask) {
+    const w = imageData.width;
+    const h = imageData.height;
+    const src = imageData.data;
+    const result = new Uint8ClampedArray(src);
+
+    // Build mask
+    const isMasked = new Uint8Array(w * h);
+    const masked = [];
+    for (let i = 0; i < w * h; i++) {
+      if (scaledMask.data[i * 4 + 3] > 20) { isMasked[i] = 1; masked.push(i); }
+    }
+    if (!masked.length) return imageData;
+
+    // Collect boundary pixels: non-masked pixels that directly touch the mask.
+    // These are the "real" edge pixels we interpolate from — no cascading averages.
+    const bx = [], by = [], bIdx = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (isMasked[i]) continue;
+        if ((x > 0   && isMasked[y * w + x - 1]) ||
+            (x < w-1 && isMasked[y * w + x + 1]) ||
+            (y > 0   && isMasked[(y-1) * w + x]) ||
+            (y < h-1 && isMasked[(y+1) * w + x])) {
+          bx.push(x); by.push(y); bIdx.push(i);
+        }
+      }
+    }
+
+    if (!bIdx.length) return imageData;
+
+    const BN = bIdx.length;
+
+    // Fill each masked pixel with inverse-distance² weighted average
+    // of boundary pixels. Closer boundary pixels dominate strongly,
+    // giving a smooth, non-smearing fill that matches the image edge.
+    for (const idx of masked) {
+      const px = idx % w, py = (idx / w) | 0;
+      let r = 0, g = 0, b = 0, totalW = 0;
+      for (let k = 0; k < BN; k++) {
+        const dx = bx[k] - px, dy = by[k] - py;
+        const wt = 1 / (dx * dx + dy * dy + 1);
+        r += src[bIdx[k] * 4]     * wt;
+        g += src[bIdx[k] * 4 + 1] * wt;
+        b += src[bIdx[k] * 4 + 2] * wt;
+        totalW += wt;
+      }
+      result[idx * 4]     = (r / totalW + 0.5) | 0;
+      result[idx * 4 + 1] = (g / totalW + 0.5) | 0;
+      result[idx * 4 + 2] = (b / totalW + 0.5) | 0;
+    }
+
+    return new ImageData(result, w, h);
+  }
+
+  async function processPhoto(p) {
+    if (!committedMask) return;
+    const scaledMask = scaleMaskToSize(committedMask, p.bitmap.width, p.bitmap.height);
+    const off = document.createElement('canvas');
+    off.width  = p.bitmap.width;
+    off.height = p.bitmap.height;
+    const ctx = off.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(p.bitmap, 0, 0);
+    const imgData = ctx.getImageData(0, 0, off.width, off.height);
+    const result  = performInpaint(imgData, scaledMask);
+    ctx.putImageData(result, 0, 0);
+    p.processedBitmap = await createImageBitmap(off);
+  }
+
+  // ── Preview rendering ─────────────────────────────────────────────────────
+
+  function renderPreview(p, showProcessed) {
+    const bmp = (showProcessed && p.processedBitmap) ? p.processedBitmap : p.bitmap;
+    const canvas = p.canvasEl;
+    const cap = 900;
+    let w = bmp.width, h = bmp.height;
+    if (w > cap) { h = Math.round(h * cap / w); w = cap; }
+    canvas.width  = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+  }
+
+  // ── List UI ───────────────────────────────────────────────────────────────
+
+  function makeItemUI(photoObj, idx) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'item';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    thumb.appendChild(photoObj.canvasEl);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'name';
+    nameEl.textContent = photoObj.name;
+
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    sub.textContent = 'Original — draw the mask then click Remove watermarks.';
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    // Before/after toggle (hidden until processed)
+    const toggleBtn = document.createElement('button');
+    toggleBtn.type = 'button';
+    toggleBtn.className = 'secondary';
+    toggleBtn.textContent = 'Show original';
+    toggleBtn.style.display = 'none';
+    let showingProcessed = true;
+    toggleBtn.addEventListener('click', () => {
+      showingProcessed = !showingProcessed;
+      renderPreview(photoObj, showingProcessed);
+      toggleBtn.textContent = showingProcessed ? 'Show original' : 'Show cleaned';
+    });
+    photoObj.toggleBtn = toggleBtn;
+    photoObj.subEl = sub;
+
+    const dlBtn = document.createElement('button');
+    dlBtn.type = 'button';
+    dlBtn.textContent = 'Download';
+    dlBtn.addEventListener('click', async () => {
+      const bmp = photoObj.processedBitmap || photoObj.bitmap;
+      const off = document.createElement('canvas');
+      off.width  = bmp.width;
+      off.height = bmp.height;
+      off.getContext('2d').drawImage(bmp, 0, 0);
+      off.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${safeBase(photoObj.name)}_cleaned.jpg`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      }, 'image/jpeg', 0.92);
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'danger';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', () => {
+      try { photoObj.bitmap.close?.(); } catch {}
+      try { photoObj.processedBitmap?.close?.(); } catch {}
+      photos.splice(idx, 1);
+      rebuildList();
+    });
+
+    actions.appendChild(toggleBtn);
+    actions.appendChild(dlBtn);
+    actions.appendChild(removeBtn);
+
+    meta.appendChild(nameEl);
+    meta.appendChild(sub);
+    meta.appendChild(actions);
+
+    wrapper.appendChild(thumb);
+    wrapper.appendChild(meta);
+
+    renderPreview(photoObj, false);
+    return wrapper;
+  }
+
+  function rebuildList() {
+    listEl.innerHTML = '';
+    photos.forEach((p, i) => listEl.appendChild(makeItemUI(p, i)));
+    updateCount();
+    if (photos.length === 0) {
+      maskEditorWrap.style.display = 'none';
+      downloadAllBtn.disabled = true;
+    }
+  }
+
+  // ── Button handlers ───────────────────────────────────────────────────────
+
+  drop.addEventListener('click', () => photosInput.click());
+  drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer?.files) addFiles(e.dataTransfer.files); });
+  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') photosInput.click(); });
+  photosInput.addEventListener('change', () => { if (photosInput.files) addFiles(photosInput.files); photosInput.value = ''; });
+
+  processAllBtn.addEventListener('click', async () => {
+    if (!photos.length) return;
+    if (!committedMask || !committedMask.data.some(v => v > 0)) {
+      setStatus('Please draw over the watermark area first.');
+      return;
+    }
+    processAllBtn.disabled = true;
+    for (let i = 0; i < photos.length; i++) {
+      setStatus(`Processing ${i + 1} / ${photos.length}…`);
+      await processPhoto(photos[i]);
+      renderPreview(photos[i], true);
+      if (photos[i].toggleBtn) photos[i].toggleBtn.style.display = 'inline-flex';
+      if (photos[i].subEl) photos[i].subEl.textContent = 'Cleaned. Download ready.';
+      await new Promise(requestAnimationFrame);
+    }
+    setStatus('All photos processed!', true);
+    processAllBtn.disabled = false;
+    downloadAllBtn.disabled = false;
+  });
+
+  downloadAllBtn.addEventListener('click', async () => {
+    if (!window.JSZip) { setStatus('JSZip failed to load.'); return; }
+    setStatus('Building ZIP…');
+    const zip = new JSZip();
+    for (let i = 0; i < photos.length; i++) {
+      const p = photos[i];
+      setStatus(`Compressing ${i + 1} / ${photos.length}…`);
+      const bmp = p.processedBitmap || p.bitmap;
+      const off = document.createElement('canvas');
+      off.width = bmp.width; off.height = bmp.height;
+      off.getContext('2d').drawImage(bmp, 0, 0);
+      const blob = await new Promise(res => off.toBlob(res, 'image/jpeg', 0.92));
+      zip.file(`${safeBase(p.name)}_cleaned.jpg`, await blob.arrayBuffer());
+      await new Promise(requestAnimationFrame);
+    }
+    setStatus('Compressing…');
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'cleaned_images.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    setStatus('ZIP downloaded.', true);
+  });
+
+  clearAllBtn.addEventListener('click', () => {
+    for (const p of photos) {
+      try { p.bitmap.close?.(); } catch {}
+      try { p.processedBitmap?.close?.(); } catch {}
+    }
+    photos.length = 0;
+    rebuildList();
+    committedMask = null;
+    setStatus('Cleared.', true);
+  });
+
+  updateCount();
+  document.getElementById('navToggle').addEventListener('click', function() {
+    document.getElementById('headerNav').classList.toggle('open');
+  });
+  document.addEventListener('langchange', updateCount);
+</script>
+</body>
+</html>

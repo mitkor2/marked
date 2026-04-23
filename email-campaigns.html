@@ -1,0 +1,1404 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Email Campaigns – Batch Watermark</title>
+  <link rel="icon" type="image/png" href="icon-cabernet.png">
+  <script src="lang.js"></script>
+  <style>
+    :root { color-scheme:light; --bg:#f8f4ec; --surface:#fffaf3; --surface-2:#f3ede3; --header:#f7f3ec; --text:#221815; --muted:#8d96a3; --border:#e4dbcf; --accent:#7d1026; --shadow:rgba(69,38,26,0.08); }
+    *, *::before, *::after { box-sizing:border-box; }
+    body { font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin:0; background:var(--bg); color:var(--text); overflow-x:hidden; }
+    header { background:var(--header); border-bottom:1px solid var(--border); box-shadow:0 2px 10px var(--shadow); }
+    .header-inner { max-width:1100px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    .header-inner h1 { margin:0; font-size:18px; font-weight:700; color:var(--accent); display:flex; align-items:center; gap:10px; }
+    .hamburger { display:none; background:none; border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:20px; cursor:pointer; color:var(--accent); line-height:1; box-shadow:none; }
+    .header-nav { display:flex; gap:2px; align-items:center; }
+    .nav-link { padding:8px 12px; font-size:13px; font-weight:600; color:var(--muted); text-decoration:none; border-bottom:3px solid transparent; display:inline-block; white-space:nowrap; }
+    .nav-link:hover { color:var(--accent); }
+    .nav-link.active { color:var(--accent); border-bottom-color:var(--accent); }
+    @media (max-width:760px) {
+      .hamburger { display:inline-block; }
+      .header-nav { display:none; flex-direction:column; align-items:stretch; width:100%; padding:6px 0; border-top:1px solid var(--border); margin-top:6px; }
+      .header-nav.open { display:flex; }
+      .nav-link { border-bottom:none; border-radius:8px; padding:10px 12px; }
+      .nav-link.active { background:#f0e5d8; }
+    }
+
+    /* ── Main ── */
+    main { padding:24px 20px; max-width:1300px; margin:0 auto; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:20px; box-shadow:0 8px 24px var(--shadow); }
+    .card h2 { margin:0 0 16px; font-size:15px; color:var(--accent); font-weight:700; }
+
+    /* ── Template picker ── */
+    .tpl-grid { display:flex; gap:20px; flex-wrap:wrap; }
+    .tpl-card { flex:1; min-width:200px; background:var(--surface-2); border:2px solid var(--border); border-radius:16px; padding:28px 20px; text-align:center; cursor:pointer; transition:border-color .15s,box-shadow .15s; }
+    .tpl-card:hover { border-color:var(--accent); box-shadow:0 4px 20px var(--shadow); }
+    .tpl-card.active { border-color:var(--accent); background:#f5eae0; }
+    .tpl-card img { max-height:48px; max-width:160px; object-fit:contain; margin-bottom:12px; }
+    .tpl-card .tpl-name { font-size:14px; font-weight:700; color:var(--text); }
+    .tpl-card .tpl-hint { font-size:12px; color:var(--muted); margin-top:4px; }
+
+    /* ── Editor layout ── */
+    .editor-topbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    #tplLabel { flex:1; text-align:center; font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .editor-layout { display:grid; grid-template-columns:360px 1fr; gap:16px; align-items:start; }
+    @media (max-width:900px) { .editor-layout { grid-template-columns:1fr; } }
+
+    /* ── Editor panel ── */
+    .editor-panel { display:flex; flex-direction:column; gap:14px; max-height:calc(100vh - 160px); overflow-y:auto; padding-right:4px; }
+    .section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; }
+    .section-title { font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.04em; margin:0 0 12px; }
+    .field { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+    .field:last-child { margin-bottom:0; }
+    .field label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+    .field input, .field textarea { width:100%; border:1px solid var(--border); border-radius:10px; padding:8px 10px; font-size:13px; font-family:inherit; background:#fff; color:var(--text); resize:vertical; }
+    .field input:focus, .field textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(125,16,38,.08); }
+    .field input[type="url"] { font-size:12px; }
+
+    /* ── Add-property UI ── */
+    .add-prop-bar { padding:12px 14px; background:var(--surface); border:1px dashed var(--border); border-radius:14px; }
+    .add-prop-bar > .add-prop-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; display:block; margin-bottom:8px; }
+    .layout-picker { display:flex; gap:8px; }
+    .layout-card { flex:1; border:2px solid var(--border); border-radius:10px; padding:8px 6px; text-align:center; cursor:pointer; background:var(--surface-2); font-size:11px; color:var(--muted); font-weight:600; line-height:1.3; transition:border-color .15s,background .15s; }
+    .layout-card:hover { border-color:var(--accent); color:var(--accent); background:#f5eae0; }
+    .layout-card .lc-badge { display:block; width:28px; height:28px; line-height:28px; border-radius:8px; background:var(--accent); color:#fff; font-size:13px; font-weight:800; margin:0 auto 5px; }
+    .extra-section-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .extra-section-hdr .section-title { margin:0; }
+    .sec-badge { font-size:10px; color:var(--muted); background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:2px 6px; margin-left:6px; font-weight:600; }
+    .del-sec-btn { background:none; border:none; box-shadow:none; padding:2px 8px; font-size:18px; color:var(--muted); cursor:pointer; line-height:1; }
+    .del-sec-btn:hover { color:#c00; background:none; }
+    /* ── Custom editor ── */
+    .color-row { display:flex; align-items:center; gap:8px; }
+    .color-row input[type="color"] { width:40px; height:36px; padding:2px 3px; border-radius:8px; border:1px solid var(--border); cursor:pointer; background:#fff; }
+    .color-row input[type="text"] { width:86px; }
+    .logo-slot { aspect-ratio:3/1; max-width:220px; }
+
+    /* ── Image slots ── */
+    .img-slots { display:flex; gap:8px; margin-bottom:10px; }
+    .img-slot { flex:1; aspect-ratio:4/3; border:2px dashed var(--border); border-radius:10px; overflow:hidden; position:relative; cursor:pointer; background:var(--surface-2); transition:border-color .15s; }
+    .img-slot:hover { border-color:var(--accent); }
+    .img-slot img { width:100%; height:100%; object-fit:cover; display:block; }
+    .img-slot .slot-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:11px; color:var(--muted); text-align:center; padding:4px; pointer-events:none; }
+    .img-slot .slot-label span { font-size:18px; display:block; margin-bottom:3px; }
+    .img-slot.has-image .slot-label { display:none; }
+    .img-slot input[type="file"] { display:none; }
+
+    /* ── Preview panel ── */
+    .preview-panel { position:sticky; top:16px; }
+    .preview-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .preview-header span { font-size:13px; font-weight:600; color:var(--text); }
+    .preview-wrap { background:#e5e0d8; border-radius:12px; padding:12px; border:1px solid var(--border); overflow:hidden; }
+    #previewFrame { width:100%; height:calc(100vh - 200px); min-height:500px; border:none; border-radius:8px; background:#fff; display:block; }
+
+    /* ── Buttons ── */
+    button { border:1px solid var(--accent); background:var(--accent); color:#fff; padding:9px 16px; border-radius:12px; font-size:13px; cursor:pointer; font-family:inherit; box-shadow:0 4px 14px rgba(125,16,38,0.12); }
+    button:hover { background:#5f0b1c; }
+    button.secondary { background:#fff; color:var(--accent); border-color:var(--border); box-shadow:none; }
+    button.secondary:hover { background:var(--surface-2); border-color:var(--accent); }
+    #loadingMsg { font-size:13px; color:var(--muted); font-style:italic; display:none; }
+    .img-slot-wrap { flex:1; display:flex; flex-direction:column; gap:3px; min-width:0; }
+    .img-url-input { font-size:11px; padding:4px 7px; border:1px solid var(--border); border-radius:6px; color:var(--text); background:#fff; width:100%; font-family:inherit; }
+    .img-url-input:focus { outline:none; border-color:var(--accent); }
+    .img-url-input::placeholder { color:var(--muted); }
+    #fileSizeNote { font-size:11px; color:var(--muted); }
+    #fileSizeNote.warn { color:#c05000; font-weight:600; }
+
+    footer { padding:14px 20px; color:#7e756d; font-size:12px; text-align:center; border-top:1px solid var(--border); background:var(--header); margin-top:24px; }
+    footer a { color:var(--accent); text-decoration:none; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <h1><a href="index.html" style="display:inline-flex;align-items:center"><img src="icon-logotype-cabernet.png" style="height:28px;"></a></h1>
+    <button class="hamburger" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <nav class="header-nav" id="headerNav">
+      <a href="index.html" class="nav-link" data-i18n="nav.watermark">Watermark Tool</a>
+      <a href="collage.html" class="nav-link" data-i18n="nav.collage">Collage</a>
+      <a href="gif-maker.html" class="nav-link" data-i18n="nav.gif">GIF Maker</a>
+      <a href="email-campaigns.html" class="nav-link active" data-i18n="nav.email">Email Campaigns</a>
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="bg">BG</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ── Template picker ── -->
+  <div id="pickerSection">
+    <div class="card" style="max-width:560px;margin:0 auto">
+      <h2><span data-i18n="ec.pickTitle">Choose Email Template</span></h2>
+      <div class="tpl-grid">
+        <div class="tpl-card" id="cardPepa" onclick="loadTemplate('pepa')">
+          <img src="pepa_logo.png" alt="Pepa Petrova Advisory" onerror="this.style.display='none'">
+          <div class="tpl-name">Pepa Petrova Advisory</div>
+          <div class="tpl-hint" data-i18n="ec.pepaHint">Gold accent</div>
+        </div>
+        <div class="tpl-card" id="cardUrban" onclick="loadTemplate('urban')">
+          <img src="icon-logotype-cabernet.png" alt="Urban Estate">
+          <div class="tpl-name">Urban Estate</div>
+          <div class="tpl-hint" data-i18n="ec.urbanHint">Burgundy accent</div>
+        </div>
+        <div class="tpl-card" id="cardCustom" onclick="loadTemplate('custom')">
+          <div style="font-size:36px;line-height:1;margin-bottom:12px">&#9998;</div>
+          <div class="tpl-name" data-i18n="ec.customName">Custom</div>
+          <div class="tpl-hint" data-i18n="ec.customHint">Build from scratch</div>
+        </div>
+      </div>
+      <p id="loadingMsg" style="margin-top:14px;text-align:center" data-i18n="ec.loading">Loading template…</p>
+    </div>
+  </div>
+
+  <!-- ── Editor ── -->
+  <div id="editorSection" style="display:none">
+    <div class="editor-topbar">
+      <button class="secondary" onclick="backToPicker()" data-i18n="ec.backBtn">← Templates</button>
+      <button class="secondary" onclick="newSession()" data-i18n="ec.newBtn" title="Reset to defaults">New</button>
+      <span id="tplLabel"></span>
+      <button onclick="downloadHtml()" data-i18n="ec.downloadBtn">&#11015; Download HTML</button>
+      <span id="fileSizeNote"></span>
+    </div>
+    <p style="margin:0 0 10px;font-size:11px;color:#c05000;background:#fff8f0;border:1px solid #f4d0a0;border-radius:8px;padding:7px 10px"><b>Image tip:</b> Uploaded photos are embedded as data (base64) — this makes the HTML large. Gmail clips emails over <b>102 KB</b>, cutting off content. To avoid clipping and display images reliably in all email clients, paste hosted image URLs (from your website, Google Drive share link, etc.) into the URL fields below each photo slot instead of uploading files.</p>
+    <div class="editor-layout">
+      <!-- Left: form -->
+      <div class="editor-panel" id="editorForm"></div>
+      <!-- Right: preview -->
+      <div class="preview-panel">
+        <div class="preview-header">
+          <span data-i18n="ec.livePreview">Live Preview</span>
+          <span style="font-size:11px;color:var(--muted)" data-i18n="ec.emailWidth">660px email width</span>
+        </div>
+        <div class="preview-wrap">
+          <iframe id="previewFrame" sandbox="allow-same-origin allow-scripts"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  &copy; 2026
+  <a href="https://www.urbanestate.bg/home" target="_blank">Urban Estate</a>
+  <span data-i18n="footer.and">and</span>
+  <a href="https://www.pepapetrovaadvisory.com" target="_blank">Pepa Petrova Advisory</a>.
+  <span data-i18n="footer.rights">All rights reserved.</span>
+</footer>
+
+<script>
+document.getElementById('navToggle').addEventListener('click', function() {
+  document.getElementById('headerNav').classList.toggle('open');
+});
+document.addEventListener('click', function(e) {
+  const nav = document.getElementById('headerNav');
+  if (nav.classList.contains('open') && !nav.contains(e.target) && !document.getElementById('navToggle').contains(e.target)) {
+    nav.classList.remove('open');
+  }
+});
+
+// ── State ──────────────────────────────────────────────────────
+let rawHtml = '';           // original template HTML string
+let templateDom = null;     // parsed DOM (never mutated)
+let originalImgSrcs = [];   // original mceImage srcs in order
+let imageUploads = {};      // slot index -> compressed data URL from file upload
+let imageUrls    = {};      // slot index -> hosted URL typed by user (takes priority)
+let currentTpl = null;
+let extraSections = [];     // user-added property sections
+let _extraId = 0;           // counter for unique extra section IDs
+let customConfig = {};      // state for the "Custom" template builder
+
+const LAYOUT_TYPES = [
+  { id: 1, badge: 'A', label: 'Layout A', hint: 'Hero + Gallery',
+    slots: [{ key: 'hero', label: 'Hero Photo', hint: '520px' }, { key: 'sideA', label: 'Side A', hint: '286px' }, { key: 'sideB', label: 'Side B', hint: '286px' }] },
+  { id: 2, badge: 'B', label: 'Layout B', hint: 'Single Photo',
+    slots: [{ key: 'hero', label: 'Hero / GIF', hint: '534px' }] },
+  { id: 3, badge: 'C', label: 'Layout C', hint: 'Photo Pair',
+    slots: [{ key: 'sideA', label: 'Side A', hint: '286px' }, { key: 'sideB', label: 'Side B', hint: '286px' }] },
+];
+
+// ── Field definitions ─────────────────────────────────────────
+const SECTIONS = [
+  {
+    title: 'Introduction', tk: 'ec.intro',
+    fields: [
+      { key: 'f0', label: 'Subtitle (small line above headline)', lk: 'ec.f.subtitle', type: 'input', tIdx: 0 },
+      { key: 'f1', label: 'Main Headline', lk: 'ec.f.headline', type: 'input', tIdx: 1 },
+      { key: 'f2', label: 'Intro Paragraph', lk: 'ec.f.introPar', type: 'textarea', tIdx: 2 },
+    ]
+  },
+  {
+    title: 'Property 1', tk: 'ec.prop1',
+    imgSlots: [
+      { idx: 0, label: 'Hero Photo', lk: 'ec.img.hero', hint: '520px wide' },
+      { idx: 1, label: 'Side Photo A', lk: 'ec.img.sideA', hint: '286px' },
+      { idx: 2, label: 'Side Photo B', lk: 'ec.img.sideB', hint: '286px' },
+    ],
+    fields: [
+      { key: 'f3', label: 'Title', lk: 'ec.f.title', type: 'input', tIdx: 3 },
+      { key: 'f4', label: 'Description', lk: 'ec.f.desc', type: 'textarea', tIdx: 4 },
+      { key: 'f5', label: 'Specs (area, rooms, location…)', lk: 'ec.f.specs', type: 'input', tIdx: 5 },
+      { key: 'b0_text', label: 'Button Label', lk: 'ec.f.btnLabel', type: 'input', btnIdx: 0 },
+      { key: 'b0_url',  label: 'Button URL', lk: 'ec.f.btnUrl', type: 'url', btnIdx: 0, isHref: true },
+    ]
+  },
+  {
+    title: 'Property 2', tk: 'ec.prop2',
+    imgSlots: [
+      { idx: 3, label: 'Hero Photo (GIF)', lk: 'ec.img.heroGif', hint: '534px wide' },
+    ],
+    fields: [
+      { key: 'f6', label: 'Title', lk: 'ec.f.title', type: 'input', tIdx: 6 },
+      { key: 'f7', label: 'Description', lk: 'ec.f.desc', type: 'textarea', tIdx: 7 },
+      { key: 'f8', label: 'Specs', lk: 'ec.f.specs', type: 'input', tIdx: 8 },
+      { key: 'b1_text', label: 'Button Label', lk: 'ec.f.btnLabel', type: 'input', btnIdx: 1 },
+      { key: 'b1_url',  label: 'Button URL', lk: 'ec.f.btnUrl', type: 'url', btnIdx: 1, isHref: true },
+    ]
+  },
+  {
+    title: 'Property 3', tk: 'ec.prop3',
+    imgSlots: [
+      { idx: 4, label: 'Side Photo A', lk: 'ec.img.sideA', hint: '286px' },
+      { idx: 5, label: 'Side Photo B', lk: 'ec.img.sideB', hint: '286px' },
+    ],
+    fields: [
+      { key: 'f9',  label: 'Title', lk: 'ec.f.title', type: 'input', tIdx: 9 },
+      { key: 'f11', label: 'Description', lk: 'ec.f.desc', type: 'textarea', tIdx: 11 },
+      { key: 'f10', label: 'Specs', lk: 'ec.f.specs', type: 'input', tIdx: 10 },
+      { key: 'b2_text', label: 'Button Label', lk: 'ec.f.btnLabel', type: 'input', btnIdx: 2 },
+      { key: 'b2_url',  label: 'Button URL', lk: 'ec.f.btnUrl', type: 'url', btnIdx: 2, isHref: true },
+    ]
+  },
+  {
+    title: 'Footer', tk: 'ec.footer',
+    fields: [
+      { key: 'f12', label: 'Call-to-action note', lk: 'ec.f.ctaNote', type: 'textarea', tIdx: 12 },
+      { key: 'b3_text', label: 'CTA Button Label', lk: 'ec.f.ctaBtnLabel', type: 'input', btnIdx: 3 },
+      { key: 'b3_url',  label: 'CTA Button URL', lk: 'ec.f.ctaBtnUrl', type: 'url', btnIdx: 3, isHref: true },
+      { key: 'f13_0', label: 'Contact: Company Name', lk: 'ec.f.company', type: 'input', tIdx: 13, subPIdx: 0 },
+      { key: 'f13_1', label: 'Contact: Phone', lk: 'ec.f.phone', type: 'input', tIdx: 13, subPIdx: 1 },
+      { key: 'f13_2', label: 'Contact: Email', lk: 'ec.f.email', type: 'input', tIdx: 13, subPIdx: 2 },
+      { key: 'f13_3', label: 'Contact: Website', lk: 'ec.f.website', type: 'input', tIdx: 13, subPIdx: 3 },
+    ]
+  }
+];
+
+// ── Load template ─────────────────────────────────────────────
+async function loadTemplate(which) {
+  currentTpl = which;
+  document.getElementById('loadingMsg').style.display = 'block';
+  document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('active'));
+  const cardId = which === 'pepa' ? 'cardPepa' : which === 'urban' ? 'cardUrban' : 'cardCustom';
+  document.getElementById(cardId).classList.add('active');
+
+  // ── Custom mode: no template file, build from scratch ──
+  if (which === 'custom') {
+    templateDom = null; rawHtml = ''; originalImgSrcs = []; imageUploads = {};
+    extraSections = []; _extraId = 0;
+    customConfig = { logoDataUrl:null, logoSizePct:30,
+      emailBgColor:'#ffffff',
+      headerBgColor:'', headerTitle:'', headerSubtitle:'',
+      ctaText:'', ctaBtnLabel:'', ctaBtnUrl:'',
+      ctaBtnBgColor:'', ctaBtnTextColor:'#ffffff',
+      footerCompany:'', footerPhone:'', footerEmail:'', footerWebsite:'',
+      socialFacebook:'', socialInstagram:'', socialLinkedin:'',
+      legalText:'', unsubscribeUrl:'' };
+    document.getElementById('loadingMsg').style.display = 'none';
+    document.getElementById('pickerSection').style.display = 'none';
+    document.getElementById('editorSection').style.display = 'block';
+    document.getElementById('tplLabel').textContent = tl('ec.customName','Custom');
+    buildCustomForm();
+    _previewScrollY = 0;
+    updatePreview();
+    return;
+  }
+
+  const url = which === 'pepa'
+    ? 'Pepa%20Petrova%20Advisory.html'
+    : 'Urban%20Estate%20.html';
+
+  rawHtml = await fetch(url).then(r => r.text());
+  templateDom = new DOMParser().parseFromString(rawHtml, 'text/html');
+
+  // Collect original mceImage srcs (in DOM order, skip duplicates)
+  originalImgSrcs = [];
+  const seen = new Set();
+  templateDom.querySelectorAll('img.mceImage').forEach(img => {
+    if (!seen.has(img.src)) { seen.add(img.src); originalImgSrcs.push(img.src); }
+  });
+
+  imageUploads = {};
+  imageUrls    = {};
+  buildForm();
+
+  document.getElementById('pickerSection').style.display = 'none';
+  document.getElementById('editorSection').style.display = 'block';
+  document.getElementById('tplLabel').textContent =
+    which === 'pepa' ? 'Pepa Petrova Advisory' : 'Urban Estate';
+
+  _previewScrollY = 0; // fresh load — start at top
+  updatePreview();
+}
+
+// ── Build editor form ─────────────────────────────────────────
+function buildForm() {
+  const form = document.getElementById('editorForm');
+  form.innerHTML = '';
+
+  SECTIONS.forEach(sec => {
+    const div = document.createElement('div');
+    div.className = 'section';
+    if (sec.title === 'Footer') div.dataset.sec = 'footer';
+    div.innerHTML = `<div class="section-title">${tl(sec.tk, sec.title)}</div>`;
+
+    // Image slots
+    if (sec.imgSlots && sec.imgSlots.length) {
+      const row = document.createElement('div');
+      row.className = 'img-slots';
+      sec.imgSlots.forEach(slot => {
+        const wrap = document.createElement('div');
+        wrap.className = 'img-slot-wrap';
+
+        const el = document.createElement('div');
+        el.className = 'img-slot';
+        el.id = `slot_${slot.idx}`;
+        const slotLabel = tl(slot.lk, slot.label);
+        el.innerHTML = `
+          <img id="slotImg_${slot.idx}" src="${originalImgSrcs[slot.idx] || ''}" style="${originalImgSrcs[slot.idx] ? '' : 'display:none'}">
+          <div class="slot-label"><span>📷</span>${slotLabel}<br><small>${slot.hint}</small></div>
+          <input type="file" id="slotFile_${slot.idx}" accept="image/*">
+        `;
+        if (originalImgSrcs[slot.idx]) el.classList.add('has-image');
+        el.addEventListener('click', () => document.getElementById(`slotFile_${slot.idx}`).click());
+        el.querySelector('input').addEventListener('change', e => handleImageUpload(e, slot.idx));
+
+        const urlInp = document.createElement('input');
+        urlInp.type = 'url';
+        urlInp.id = `slotUrl_${slot.idx}`;
+        urlInp.className = 'img-url-input';
+        urlInp.placeholder = 'Paste image URL (Mailchimp)';
+        urlInp.value = imageUrls[slot.idx] || '';
+        urlInp.addEventListener('input', e => {
+          const url = e.target.value.trim();
+          imageUrls[slot.idx] = url || undefined;
+          const imgEl  = document.getElementById(`slotImg_${slot.idx}`);
+          const slotEl = document.getElementById(`slot_${slot.idx}`);
+          if (url) {
+            imgEl.src = url; imgEl.style.display = 'block'; slotEl.classList.add('has-image');
+          } else if (imageUploads[slot.idx]) {
+            imgEl.src = imageUploads[slot.idx];
+          } else {
+            imgEl.style.display = 'none'; slotEl.classList.remove('has-image');
+          }
+          debouncedUpdate();
+        });
+
+        wrap.appendChild(el);
+        wrap.appendChild(urlInp);
+        row.appendChild(wrap);
+      });
+      div.appendChild(row);
+    }
+
+    // Text fields
+    sec.fields.forEach(f => {
+      const fDiv = document.createElement('div');
+      fDiv.className = 'field';
+      const defaultVal = getDefaultValue(f);
+      const fieldLabel = tl(f.lk, f.label);
+      fDiv.innerHTML = `<label>${fieldLabel}</label>`;
+      if (f.type === 'textarea') {
+        fDiv.innerHTML += `<textarea id="field_${f.key}" rows="5">${esc(defaultVal)}</textarea>`;
+      } else {
+        fDiv.innerHTML += `<input type="${f.type === 'url' ? 'url' : 'text'}" id="field_${f.key}" value="${esc(defaultVal)}" placeholder="${f.type === 'url' ? 'https://…' : ''}">`;
+      }
+      fDiv.querySelector('input, textarea').addEventListener('input', debouncedUpdate);
+      div.appendChild(fDiv);
+    });
+
+    form.appendChild(div);
+  });
+
+  // Insert extra property sections + add-property button before the footer card
+  const footerEl = form.querySelector('[data-sec="footer"]');
+  extraSections.forEach(sec => form.insertBefore(buildExtraSecFormEl(sec), footerEl));
+  form.insertBefore(buildAddPropButton(), footerEl);
+}
+
+function getDefaultValue(f) {
+  if (f.tIdx !== undefined) {
+    const divs = [...templateDom.querySelectorAll('.mceText')];
+    const d = divs[f.tIdx];
+    if (!d) return '';
+    if (f.subPIdx !== undefined) {
+      const ps = [...d.querySelectorAll('p')].filter(p => !/line-height\s*:\s*0/.test(p.getAttribute('style') || ''));
+      return ps[f.subPIdx] ? ps[f.subPIdx].textContent.trim() : '';
+    }
+    return d.textContent.trim();
+  }
+  if (f.btnIdx !== undefined) {
+    const btns = [...templateDom.querySelectorAll('a.mceButtonLink')];
+    const b = btns[f.btnIdx];
+    if (!b) return '';
+    return f.isHref ? (b.getAttribute('href') || '') : b.textContent.trim();
+  }
+  return '';
+}
+
+// ── Image compression ─────────────────────────────────────────
+// Produce a data URL ≤ targetBytes so the final email stays small enough that
+// Mailchimp embeds each <img> reliably (huge base64 data URLs cause Mailchimp
+// to escape the whole tag) and Gmail doesn't clip at 102 KB.
+// Strategy: resize to maxPx, then step quality down, then shrink dimensions.
+function compressImage(dataUrl, opts, cb) {
+  const {
+    maxPx       = 480,
+    quality     = 0.7,
+    targetBytes = 35 * 1024,
+    minQuality  = 0.32,
+    minPx       = 220,
+    allowAlpha  = false,  // true only for logos that need transparency
+  } = opts || {};
+
+  const img = new Image();
+  img.onload = function() {
+    let w = img.width, h = img.height;
+    if (w > maxPx || h > maxPx) {
+      if (w >= h) { h = Math.round(h * maxPx / w); w = maxPx; }
+      else        { w = Math.round(w * maxPx / h); h = maxPx; }
+    }
+    const isPng  = dataUrl.startsWith('data:image/png');
+    const usePng = isPng && allowAlpha;
+
+    let q = quality;
+    let out = '';
+    function encode() {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      if (!usePng) {
+        // Flatten any alpha to white so JPEG doesn't render black halos.
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+      out = usePng ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', q);
+    }
+    encode();
+    // 1) Step quality down (JPEG only)
+    while (!usePng && out.length > targetBytes && q > minQuality + 0.001) {
+      q = Math.max(minQuality, q - 0.08);
+      encode();
+    }
+    // 2) Shrink dimensions if still above budget
+    while (out.length > targetBytes && Math.max(w, h) > minPx) {
+      w = Math.max(1, Math.round(w * 0.85));
+      h = Math.max(1, Math.round(h * 0.85));
+      encode();
+    }
+    cb(out);
+  };
+  img.onerror = () => cb(dataUrl);
+  img.src = dataUrl;
+}
+
+// ── Image upload ──────────────────────────────────────────────
+function handleImageUpload(e, idx) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    compressImage(ev.target.result, { maxPx: 480, quality: 0.7, targetBytes: 35 * 1024 }, dataUrl => {
+      imageUploads[idx] = dataUrl;
+      const slotEl = document.getElementById(`slot_${idx}`);
+      const imgEl  = document.getElementById(`slotImg_${idx}`);
+      if (!imageUrls[idx]) { // only update preview if no hosted URL is set
+        imgEl.src = dataUrl;
+        imgEl.style.display = 'block';
+        slotEl.classList.add('has-image');
+      }
+      debouncedUpdate();
+    });
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+// ── Update preview ─────────────────────────────────────────────
+let _previewScrollY = 0;
+let _debounceTimer  = null;
+
+function debouncedUpdate() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(() => { updatePreview(); saveSession(); }, 280);
+}
+
+function updatePreview() {
+  if (!templateDom && currentTpl !== 'custom') return;
+  const iframe = document.getElementById('previewFrame');
+  try { _previewScrollY = iframe.contentWindow.scrollY || 0; } catch(e) {}
+
+  let html;
+  if (currentTpl === 'custom') {
+    html = buildCustomEmailHtml();
+  } else {
+    const clone = templateDom.cloneNode(true);
+    applyEdits(clone);
+    html = '<!DOCTYPE html>' + clone.documentElement.outerHTML;
+  }
+  iframe.srcdoc = html;
+}
+
+// Restore scroll position after iframe content reloads
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('previewFrame').addEventListener('load', function() {
+    if (_previewScrollY > 0) {
+      try { this.contentWindow.scrollTo(0, _previewScrollY); } catch(e) {}
+    }
+  });
+  loadSession();
+});
+
+// Rebuild form labels when language changes, preserving current values
+document.addEventListener('langchange', () => {
+  if (currentTpl === 'custom') { buildCustomForm(); return; }
+  if (!templateDom) return;
+  const vals = {};
+  document.querySelectorAll('[id^="field_"]').forEach(el => { vals[el.id] = el.value; });
+  buildForm();
+  Object.entries(vals).forEach(([id, v]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  });
+});
+
+// Navigate to deepest text-bearing element to preserve nested span/strong styles
+function deepestTextEl(root) {
+  let el = root;
+  while (el.firstElementChild) el = el.firstElementChild;
+  return el;
+}
+
+// Robustly update a mceText div's visible text.
+// Skips spacer <p> elements (line-height:0), handles split-span titles,
+// and clears nested children so the whole value is replaced cleanly.
+function updateTextBlock(div, value) {
+  if (!div) return;
+
+  // Heading-based blocks (h1/h2/h3)
+  const heading = div.querySelector('h1,h2,h3');
+  if (heading) {
+    // Preserve the dominant span's color (take the longest span's color)
+    const spans = [...heading.querySelectorAll('span')];
+    const mainSpan = spans.sort((a, b) => b.textContent.length - a.textContent.length)[0];
+    const color = mainSpan?.style?.color || '';
+    heading.innerHTML = color
+      ? `<span style="color:${color};font-weight:bold">${value}</span>`
+      : `<strong>${value}</strong>`;
+    heading.style.fontWeight = 'bold';
+    return;
+  }
+
+  // Paragraph-based: skip spacer paragraphs that have line-height:0
+  const allPs = [...div.querySelectorAll('p')];
+  const contentP = allPs.find(p => {
+    const s = p.getAttribute('style') || '';
+    return !/line-height\s*:\s*0/.test(s);
+  }) || allPs[allPs.length - 1];
+
+  if (contentP) {
+    const hasStrong = !!contentP.querySelector('strong');
+    if (hasStrong) {
+      // Preserve colour + font-size from the dominant inner span
+      const allSpans = [...contentP.querySelectorAll('span')];
+      const mainSpan = allSpans.sort((a,b) => b.textContent.length - a.textContent.length)[0];
+      const color = mainSpan?.style?.color || '#474747';
+      const fSize = mainSpan?.style?.fontSize || '';
+      const inner = fSize ? `<span style="font-size:${fSize}">${value}</span>` : value;
+      contentP.innerHTML = `<strong><span style="color:${color}">${inner}</span></strong>`;
+    } else {
+      contentP.textContent = value;
+    }
+  }
+}
+
+function applyEdits(dom) {
+  const textDivs = [...dom.querySelectorAll('.mceText')];
+  const buttons  = [...dom.querySelectorAll('a.mceButtonLink')];
+
+  SECTIONS.forEach(sec => {
+    sec.fields.forEach(f => {
+      const el = document.getElementById(`field_${f.key}`);
+      if (!el) return;
+      const val = el.value;
+
+      if (f.tIdx !== undefined) {
+        const d = textDivs[f.tIdx];
+        if (!d) return;
+        if (f.subPIdx !== undefined) {
+          const ps = [...d.querySelectorAll('p')].filter(p => !/line-height\s*:\s*0/.test(p.getAttribute('style') || ''));
+          if (ps[f.subPIdx]) ps[f.subPIdx].textContent = val;
+        } else {
+          updateTextBlock(d, val);
+        }
+      } else if (f.btnIdx !== undefined) {
+        const b = buttons[f.btnIdx];
+        if (!b) return;
+        if (f.isHref) b.href = val;
+        else b.textContent = val;
+      }
+    });
+  });
+
+  // Inject extra property sections FIRST so the CTA button ends up after all of them
+  injectExtraSections(dom);
+
+  // Inject CTA button for templates that don't have a 4th button (e.g. Pepa has only 3)
+  const btnCount = [...dom.querySelectorAll('a.mceButtonLink')].length;
+  if (btnCount < 4) {
+    const tEl = document.getElementById('field_b3_text');
+    const uEl = document.getElementById('field_b3_url');
+    if (tEl && tEl.value) injectCtaButton(dom, tEl.value, uEl ? uEl.value : '#');
+  }
+
+  // Images — replace mceImage srcs (hosted URL takes priority over data URL)
+  const allImgs = [...dom.querySelectorAll('img.mceImage')];
+  const srcToImgs = {};
+  allImgs.forEach(img => {
+    const k = img.src;
+    if (!srcToImgs[k]) srcToImgs[k] = [];
+    srcToImgs[k].push(img);
+  });
+  for (let i = 0; i < originalImgSrcs.length; i++) {
+    const resolved = imageUrls[i] || imageUploads[i];
+    const origSrc  = originalImgSrcs[i];
+    if (resolved && origSrc && srcToImgs[origSrc]) {
+      srcToImgs[origSrc].forEach(img => { img.src = resolved; });
+    }
+  }
+}
+
+// ── Download ──────────────────────────────────────────────────
+function minifyEmailHtml(html) {
+  // Remove only plain HTML comments that contain no special markers.
+  // Preserve ALL of these patterns:
+  //   <!--[if ...]>     MSO/Outlook conditional open
+  //   <!--<![...        Conditional closing markers  (e.g. <!--<![endif]-->)
+  //   <!--*|...|*-->    Mailchimp merge-tag conditionals
+  //   <!--MCE_...-->    Mailchimp tracking/placeholder comments
+  //   <!---->           Empty comments
+  //   <!-->             The embedded ">" marker inside <!--[if !mso]><!-->
+  //                     — without this guard the regex picks up the inner <!--
+  //                       and swallows entire image blocks up to the next -->
+  html = html.replace(
+    /<!--(?!\[if\b)(?!<!\[)(?!\*\|)(?!MCE_)(?!>)(?!-->)[\s\S]*?-->/g,
+    ''
+  );
+  // Collapse whitespace-only gaps between tags
+  html = html.replace(/>\s+</g, '><');
+  return html.trim();
+}
+
+function _showFileSize(html) {
+  const kb  = Math.round(html.length / 1024);
+  const el  = document.getElementById('fileSizeNote');
+  if (!el) return;
+  if (kb > 102) {
+    el.className   = 'warn';
+    el.textContent = `~${kb} KB — Gmail clips emails over 102 KB! Use hosted image URLs (paste in the URL fields) so images don't bloat the HTML.`;
+  } else if (kb > 80) {
+    el.className   = 'warn';
+    el.textContent = `~${kb} KB — approaching Gmail's 102 KB clip limit. Consider using hosted image URLs.`;
+  } else {
+    el.className   = '';
+    el.textContent = `~${kb} KB`;
+  }
+}
+
+function downloadHtml() {
+  if (!templateDom && currentTpl !== 'custom') return;
+  if (currentTpl === 'custom') {
+    const html = buildCustomEmailHtml();
+    _showFileSize(html);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([html], { type:'text/html' }));
+    a.download = 'Custom Email.html';
+    a.click();
+    return;
+  }
+  const clone = templateDom.cloneNode(true);
+  applyEdits(clone);
+
+  // Also replace in the raw string so MSO conditional comments are updated
+  let html = '<!DOCTYPE html>' + clone.documentElement.outerHTML;
+
+  // Replace original image srcs — hosted URL takes priority over compressed data URL
+  for (let i = 0; i < originalImgSrcs.length; i++) {
+    const resolved = imageUrls[i] || imageUploads[i];
+    if (resolved && originalImgSrcs[i]) {
+      html = html.split(originalImgSrcs[i]).join(resolved);
+    }
+  }
+
+  // Minify: strip non-MSO comments and collapse whitespace to reduce file size
+  html = minifyEmailHtml(html);
+
+  _showFileSize(html);
+
+  const fname = currentTpl === 'pepa'
+    ? 'Pepa Petrova Advisory - edited.html'
+    : 'Urban Estate - edited.html';
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.download = fname;
+  a.click();
+}
+
+// ── Back to picker ────────────────────────────────────────────
+function backToPicker() {
+  document.getElementById('editorSection').style.display = 'none';
+  document.getElementById('loadingMsg').style.display = 'none';
+  document.getElementById('pickerSection').style.display = 'block';
+  document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('active'));
+  extraSections = [];
+  _extraId = 0;
+  customConfig = {};
+  imageUploads = {};
+  imageUrls    = {};
+  const sizeEl = document.getElementById('fileSizeNote');
+  if (sizeEl) { sizeEl.textContent = ''; sizeEl.className = ''; }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Safe translation helper: returns fallback if key is not found in _T
+function tl(key, fallback) {
+  if (typeof _T !== 'function') return fallback;
+  const v = _T(key);
+  return (v && v !== key) ? v : fallback;
+}
+
+// ── Custom template builder ───────────────────────────────────
+function buildCustomForm() {
+  const form = document.getElementById('editorForm');
+  form.innerHTML = '';
+  const c = customConfig;
+
+  function makeSection(title, fields) {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    sec.innerHTML = `<div class="section-title">${title}</div>`;
+    fields.forEach(f => {
+      const fDiv = document.createElement('div');
+      fDiv.className = 'field';
+      fDiv.innerHTML = `<label>${f.label}</label>`;
+      if (f.type === 'color' || f.type === 'color-optional') {
+        const initVal = c[f.key] || (f.type === 'color' ? '#7d1026' : '');
+        fDiv.innerHTML += `<div class="color-row">
+          <input type="color" id="cf_${f.key}" value="${esc(initVal||'#7d1026')}">
+          <input type="text"  id="cf_${f.key}_hex" value="${esc(initVal)}" placeholder="${f.type==='color-optional'?'(blank = default)':'#rrggbb'}">
+        </div>`;
+        fDiv.querySelector('[type="color"]').addEventListener('input', e => {
+          c[f.key] = e.target.value;
+          document.getElementById(`cf_${f.key}_hex`).value = e.target.value;
+          debouncedUpdate();
+        });
+        fDiv.querySelector('[type="text"]').addEventListener('input', e => {
+          const v = e.target.value;
+          if (v === '' || /^#[0-9a-fA-F]{6}$/.test(v)) {
+            c[f.key] = v;
+            if (v) document.getElementById(`cf_${f.key}`).value = v;
+            debouncedUpdate();
+          }
+        });
+      } else if (f.type === 'number') {
+        fDiv.innerHTML += `<input type="number" id="cf_${f.key}" value="${c[f.key]||64}" min="${f.min||1}" max="${f.max||999}" style="width:80px">`;
+        fDiv.querySelector('input').addEventListener('input', e => { c[f.key] = parseInt(e.target.value)||64; debouncedUpdate(); });
+      } else if (f.type === 'range') {
+        const rVal = c[f.key] !== undefined ? c[f.key] : (f.default||50);
+        fDiv.innerHTML += `<div style="display:flex;align-items:center;gap:8px">
+          <input type="range" id="cf_${f.key}" value="${rVal}" min="${f.min||10}" max="${f.max||100}" step="${f.step||5}" style="flex:1;accent-color:var(--accent)">
+          <span id="cf_${f.key}_val" style="font-size:12px;font-weight:600;color:var(--accent);min-width:38px;text-align:right">${rVal}%</span>
+        </div>`;
+        fDiv.querySelector('input').addEventListener('input', e => {
+          c[f.key] = parseInt(e.target.value);
+          document.getElementById(`cf_${f.key}_val`).textContent = e.target.value + '%';
+          debouncedUpdate();
+        });
+      } else if (f.type === 'logo') {
+        fDiv.innerHTML += `<div class="img-slot logo-slot" id="cf_logoSlot">
+          <img id="cf_logoImg" src="${c.logoDataUrl||''}" style="${c.logoDataUrl?'':'display:none'}">
+          <div class="slot-label"><span>&#128247;</span>Upload Logo<br><small>PNG recommended</small></div>
+          <input type="file" id="cf_logoFile" accept="image/*">
+        </div>`;
+        if (c.logoDataUrl) fDiv.querySelector('.img-slot').classList.add('has-image');
+        fDiv.querySelector('.img-slot').addEventListener('click', () => document.getElementById('cf_logoFile').click());
+        fDiv.querySelector('[type="file"]').addEventListener('change', e => {
+          const file = e.target.files[0]; if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => {
+            compressImage(ev.target.result, { maxPx: 380, quality: 0.9, targetBytes: 22 * 1024, allowAlpha: true, minPx: 160 }, dataUrl => {
+              c.logoDataUrl = dataUrl;
+              document.getElementById('cf_logoImg').src = dataUrl;
+              document.getElementById('cf_logoImg').style.display = 'block';
+              document.getElementById('cf_logoSlot').classList.add('has-image');
+              debouncedUpdate();
+            });
+          };
+          reader.readAsDataURL(file); e.target.value = '';
+        });
+      } else if (f.type === 'textarea') {
+        fDiv.innerHTML += `<textarea id="cf_${f.key}" rows="4">${esc(c[f.key]||'')}</textarea>`;
+        fDiv.querySelector('textarea').addEventListener('input', e => { c[f.key] = e.target.value; debouncedUpdate(); });
+      } else {
+        fDiv.innerHTML += `<input type="${f.type==='url'?'url':'text'}" id="cf_${f.key}" value="${esc(c[f.key]||'')}" placeholder="${f.type==='url'?'https://…':''}">`;
+        fDiv.querySelector('input').addEventListener('input', e => { c[f.key] = e.target.value; debouncedUpdate(); });
+      }
+      sec.appendChild(fDiv);
+    });
+    return sec;
+  }
+
+  // Ensure defaults for new config keys
+  if (customConfig.logoSizePct  === undefined) customConfig.logoSizePct  = 30;
+  if (!customConfig.emailBgColor)              customConfig.emailBgColor  = '#ffffff';
+  if (!customConfig.ctaBtnTextColor)           customConfig.ctaBtnTextColor = '#ffffff';
+
+  form.appendChild(makeSection('Branding', [
+    { key:'logoDataUrl',  label:'Logo',                           type:'logo'  },
+    { key:'logoSizePct',  label:'Logo Size (%)',                  type:'range', min:10, max:100, step:5, default:30 },
+    { key:'emailBgColor', label:'Email Background',               type:'color' },
+    { key:'headerBgColor',label:'Header Background (blank = transparent)', type:'color-optional' },
+  ]));
+  form.appendChild(makeSection('Header', [
+    { key:'headerTitle',    label:'Headline',  type:'input'    },
+    { key:'headerSubtitle', label:'Subtitle',  type:'textarea' },
+  ]));
+
+  // Extra property sections + add button
+  extraSections.forEach(sec => form.appendChild(buildExtraSecFormEl(sec)));
+  form.appendChild(buildAddPropButton());
+
+  form.appendChild(makeSection('CTA & Footer', [
+    { key:'ctaText',         label:'Call-to-action text',          type:'textarea' },
+    { key:'ctaBtnLabel',     label:'CTA Button Label',             type:'input'    },
+    { key:'ctaBtnUrl',       label:'CTA Button URL',               type:'url'      },
+    { key:'ctaBtnBgColor',   label:'CTA Button Colour (blank = header colour)', type:'color-optional' },
+    { key:'ctaBtnTextColor', label:'CTA Button Text Colour',       type:'color-optional' },
+    { key:'footerCompany',   label:'Contact: Company',             type:'input'    },
+    { key:'footerPhone',     label:'Contact: Phone',               type:'input'    },
+    { key:'footerEmail',     label:'Contact: Email',               type:'input'    },
+    { key:'footerWebsite',   label:'Contact: Website',             type:'input'    },
+  ]));
+  form.appendChild(makeSection('Social Media & Legal', [
+    { key:'socialFacebook',  label:'Facebook URL',                 type:'url'      },
+    { key:'socialInstagram', label:'Instagram URL',                type:'url'      },
+    { key:'socialLinkedin',  label:'LinkedIn URL',                 type:'url'      },
+    { key:'legalText',       label:'Unsubscribe / Legal text',     type:'textarea' },
+    { key:'unsubscribeUrl',  label:'Unsubscribe URL',              type:'url'      },
+  ]));
+}
+
+function isColorDark(hex) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return (r*299 + g*587 + b*114) / 1000 < 128;
+}
+
+function buildCustomEmailHtml() {
+  const c = customConfig;
+  const hasHeaderBg = c.headerBgColor && /^#[0-9a-fA-F]{6}$/.test(c.headerBgColor);
+  const headerBg    = hasHeaderBg ? c.headerBgColor : '#ffffff';
+  const onHeader    = hasHeaderBg ? (isColorDark(c.headerBgColor) ? '#ffffff' : '#222222') : '#222222';
+  const brandColor  = hasHeaderBg ? c.headerBgColor : '#7d1026';  // used for buttons, footer, links
+  const onBrand     = isColorDark(brandColor) ? '#ffffff' : '#222222';
+  const emailBg     = (c.emailBgColor && /^#[0-9a-fA-F]{6}$/.test(c.emailBgColor)) ? c.emailBgColor : '#ffffff';
+  const logoSizePct = Math.max(10, Math.min(100, parseInt(c.logoSizePct)||30));
+  const font        = "'Helvetica Neue',Helvetica,Arial,Verdana,sans-serif";
+
+  const logoHtml = c.logoDataUrl
+    ? `<img src="${c.logoDataUrl}" style="max-width:${logoSizePct}%;max-height:120px;display:block;margin:0 auto ${(c.headerTitle||c.headerSubtitle)?'16px':'0'}" alt="Logo">`
+    : '';
+
+  const headerHtml = `<tr><td style="background-color:${headerBg};padding:32px 24px;text-align:center">
+    ${logoHtml}
+    ${c.headerTitle    ? `<h1 style="margin:0 0 6px;font-family:${font};font-size:26px;font-weight:700;color:${onHeader};letter-spacing:2px">${esc(c.headerTitle)}</h1>` : ''}
+    ${c.headerSubtitle ? `<p style="margin:0;font-family:${font};font-size:14px;color:${onHeader};opacity:.85;line-height:1.6">${esc(c.headerSubtitle).replace(/\n/g,'<br>')}</p>` : ''}
+  </td></tr>`;
+
+  const propHtml = extraSections.map(sec =>
+    `<tr><td style="padding:0">${buildPropertyBlockHtml(sec, brandColor)}</td></tr>`
+  ).join('');
+
+  // CTA button
+  const ctaBtnBg = (c.ctaBtnBgColor  && /^#/.test(c.ctaBtnBgColor))  ? c.ctaBtnBgColor  : brandColor;
+  const ctaBtnFg = (c.ctaBtnTextColor && /^#/.test(c.ctaBtnTextColor)) ? c.ctaBtnTextColor : '#ffffff';
+
+  const ctaHtml = (c.ctaText || c.ctaBtnLabel) ? `<tr><td style="padding:32px 24px;text-align:center;background-color:#ffffff">
+    ${c.ctaText ? `<p style="margin:0 0 16px;font-family:${font};font-size:14px;color:#474747;line-height:1.65">${esc(c.ctaText).replace(/\n/g,'<br>')}</p>` : ''}
+    ${c.ctaBtnLabel ? `<table align="center" border="0" cellpadding="0" cellspacing="0"><tbody><tr>
+      <td style="background-color:${ctaBtnBg};border-radius:50px;text-align:center">
+        <a href="${esc(c.ctaBtnUrl||'#')}" target="_blank" style="background-color:${ctaBtnBg};border-radius:50px;color:${ctaBtnFg};display:block;font-family:${font};font-size:14px;font-weight:bold;padding:16px 28px;text-decoration:none;letter-spacing:3px">${esc(c.ctaBtnLabel)}</a>
+      </td>
+    </tr></tbody></table>` : ''}
+  </td></tr>` : '';
+
+  // Social media links
+  const socials = [
+    c.socialFacebook  && { url: c.socialFacebook,  label: 'Facebook'  },
+    c.socialInstagram && { url: c.socialInstagram, label: 'Instagram' },
+    c.socialLinkedin  && { url: c.socialLinkedin,  label: 'LinkedIn'  },
+  ].filter(Boolean);
+  const socialHtml = socials.length ? `<tr><td style="padding:20px 24px 16px;text-align:center;background-color:#f8f4ec">
+    <p style="margin:0 0 10px;font-family:${font};font-size:11px;font-weight:700;color:#8d96a3;text-transform:uppercase;letter-spacing:.06em">Follow us</p>
+    ${socials.map((s,i) => (i > 0 ? '<span style="color:#c0b8b0;margin:0 6px">|</span>' : '') +
+      `<a href="${esc(s.url)}" target="_blank" style="font-family:${font};font-size:13px;font-weight:600;color:${brandColor};text-decoration:none">${esc(s.label)}</a>`
+    ).join('')}
+  </td></tr>` : '';
+
+  // Contact footer
+  const contactLines = [c.footerCompany, c.footerPhone, c.footerEmail, c.footerWebsite].filter(Boolean);
+  const footerHtml = contactLines.length ? `<tr><td style="background-color:${brandColor};padding:24px;text-align:center">
+    ${contactLines.map(l => `<p style="margin:2px 0;font-family:${font};font-size:12px;color:${onBrand}">${esc(l)}</p>`).join('')}
+  </td></tr>` : '';
+
+  // Unsubscribe / legal
+  const legalHtml = (c.legalText || c.unsubscribeUrl) ? `<tr><td style="padding:16px 24px;text-align:center;background-color:#f8f4ec;border-top:1px solid #e4dbcf">
+    ${c.legalText ? `<p style="margin:0 0 6px;font-family:${font};font-size:11px;color:#8d96a3;line-height:1.5">${esc(c.legalText).replace(/\n/g,'<br>')}</p>` : ''}
+    ${c.unsubscribeUrl ? `<a href="${esc(c.unsubscribeUrl)}" target="_blank" style="font-family:${font};font-size:11px;color:#8d96a3;text-decoration:underline">Unsubscribe</a>` : ''}
+  </td></tr>` : '';
+
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Email</title></head>
+<body style="margin:0;padding:0;background-color:${emailBg};font-family:${font}">
+<table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:${emailBg}">
+<tbody><tr><td align="center" style="padding:20px 0">
+  <table width="660" border="0" cellpadding="0" cellspacing="0" style="max-width:660px;background-color:#ffffff">
+  <tbody>
+    ${headerHtml}
+    ${propHtml}
+    ${ctaHtml}
+    ${socialHtml}
+    ${footerHtml}
+    ${legalHtml}
+  </tbody></table>
+</td></tr></tbody></table>
+</body></html>`;
+}
+
+// ── Extra property sections ───────────────────────────────────
+function buildAddPropButton() {
+  const bar = document.createElement('div');
+  bar.className = 'add-prop-bar';
+  bar.id = 'addPropBar';
+  bar.innerHTML = `
+    <span class="add-prop-label" data-i18n="ec.addPropTitle">${tl('ec.addPropTitle','Add Property Section')}</span>
+    <div class="layout-picker">
+      ${LAYOUT_TYPES.map(t => `
+        <div class="layout-card" onclick="addExtraSection(${t.id})">
+          <span class="lc-badge">${t.badge}</span>${t.label}
+          <div style="font-size:10px;margin-top:2px;opacity:.7">${t.hint}</div>
+        </div>
+      `).join('')}
+    </div>`;
+  return bar;
+}
+
+function addExtraSection(type) {
+  const sec = { id: _extraId++, type, fields: {}, imgUploads: {} };
+  extraSections.push(sec);
+  const addBar = document.getElementById('addPropBar');
+  addBar.parentNode.insertBefore(buildExtraSecFormEl(sec), addBar);
+  debouncedUpdate();
+}
+
+function removeExtraSection(id) {
+  extraSections = extraSections.filter(s => s.id !== id);
+  const el = document.getElementById(`extrasec_${id}`);
+  if (el) el.remove();
+  debouncedUpdate();
+}
+
+function buildExtraSecFormEl(sec) {
+  const layout = LAYOUT_TYPES.find(t => t.id === sec.type);
+  // In custom mode, properties start at 1; in template mode, after 3 built-in properties
+  const propNum = extraSections.indexOf(sec) + (currentTpl === 'custom' ? 1 : 4);
+  const div = document.createElement('div');
+  div.className = 'section';
+  div.id = `extrasec_${sec.id}`;
+
+  // Header with badge + delete
+  const hdr = document.createElement('div');
+  hdr.className = 'extra-section-hdr';
+  hdr.innerHTML = `
+    <div style="display:flex;align-items:center">
+      <div class="section-title">Property ${propNum}</div>
+      <span class="sec-badge">${layout.label}</span>
+    </div>
+    <button class="del-sec-btn" onclick="removeExtraSection(${sec.id})" title="Remove">×</button>`;
+  div.appendChild(hdr);
+
+  // Image slots
+  if (!sec.imgUrls) sec.imgUrls = {};
+  if (layout.slots.length) {
+    const row = document.createElement('div');
+    row.className = 'img-slots';
+    layout.slots.forEach(slot => {
+      const wrap = document.createElement('div');
+      wrap.className = 'img-slot-wrap';
+
+      const resolvedSrc = sec.imgUrls[slot.key] || sec.imgUploads[slot.key] || '';
+      const slotEl = document.createElement('div');
+      slotEl.className = 'img-slot' + (resolvedSrc ? ' has-image' : '');
+      slotEl.id = `xslot_${sec.id}_${slot.key}`;
+      slotEl.innerHTML = `
+        <img id="xslotImg_${sec.id}_${slot.key}" src="${resolvedSrc}" style="${resolvedSrc?'':'display:none'}">
+        <div class="slot-label"><span>📷</span>${slot.label}<br><small>${slot.hint}</small></div>
+        <input type="file" id="xslotFile_${sec.id}_${slot.key}" accept="image/*">`;
+      slotEl.addEventListener('click', () => document.getElementById(`xslotFile_${sec.id}_${slot.key}`).click());
+      slotEl.querySelector('input').addEventListener('change', e => handleExtraImageUpload(e, sec.id, slot.key));
+
+      const urlInp = document.createElement('input');
+      urlInp.type = 'url';
+      urlInp.id = `xslotUrl_${sec.id}_${slot.key}`;
+      urlInp.className = 'img-url-input';
+      urlInp.placeholder = 'Paste image URL (Mailchimp)';
+      urlInp.value = sec.imgUrls[slot.key] || '';
+      urlInp.addEventListener('input', e => {
+        const url = e.target.value.trim();
+        sec.imgUrls[slot.key] = url || undefined;
+        const imgEl  = document.getElementById(`xslotImg_${sec.id}_${slot.key}`);
+        const sEl    = document.getElementById(`xslot_${sec.id}_${slot.key}`);
+        if (url) {
+          imgEl.src = url; imgEl.style.display = 'block'; sEl.classList.add('has-image');
+        } else if (sec.imgUploads[slot.key]) {
+          imgEl.src = sec.imgUploads[slot.key];
+        } else {
+          imgEl.style.display = 'none'; sEl.classList.remove('has-image');
+        }
+        debouncedUpdate();
+      });
+
+      wrap.appendChild(slotEl);
+      wrap.appendChild(urlInp);
+      row.appendChild(wrap);
+    });
+    div.appendChild(row);
+  }
+
+  // Default button colors lazily (only first time)
+  const defAccent = currentTpl === 'pepa' ? '#d4ad51' : (customConfig.accentColor || '#7d1026');
+  if (!sec.fields.btnBgColor)   sec.fields.btnBgColor   = defAccent;
+  if (!sec.fields.btnTextColor) sec.fields.btnTextColor = isColorDark(defAccent) ? '#ffffff' : '#222222';
+
+  // Text + color fields
+  [
+    { key:'title',        label:'Title',             lk:'ec.f.title',    type:'input'    },
+    { key:'desc',         label:'Description',       lk:'ec.f.desc',     type:'textarea' },
+    { key:'specs',        label:'Specs',             lk:'ec.f.specs',    type:'input'    },
+    { key:'btnLabel',     label:'Button Label',      lk:'ec.f.btnLabel', type:'input'    },
+    { key:'btnUrl',       label:'Button URL',        lk:'ec.f.btnUrl',   type:'url'      },
+    { key:'btnBgColor',   label:'Button Colour',     lk:'',              type:'color'    },
+    { key:'btnTextColor', label:'Button Text Colour',lk:'',              type:'color'    },
+  ].forEach(f => {
+    const fDiv = document.createElement('div');
+    fDiv.className = 'field';
+    const fid = `xfield_${sec.id}_${f.key}`;
+    fDiv.innerHTML = `<label>${tl(f.lk, f.label) || f.label}</label>`;
+    if (f.type === 'color') {
+      const val = sec.fields[f.key] || '#7d1026';
+      fDiv.innerHTML += `<div class="color-row">
+        <input type="color" id="${fid}" value="${esc(val)}">
+        <input type="text"  id="${fid}_hex" value="${esc(val)}" placeholder="#rrggbb">
+      </div>`;
+      fDiv.querySelector('[type="color"]').addEventListener('input', e => {
+        sec.fields[f.key] = e.target.value;
+        document.getElementById(`${fid}_hex`).value = e.target.value;
+        debouncedUpdate();
+      });
+      fDiv.querySelector('[type="text"]').addEventListener('input', e => {
+        if (/^#[0-9a-fA-F]{6}$/.test(e.target.value)) {
+          sec.fields[f.key] = e.target.value;
+          document.getElementById(fid).value = e.target.value;
+          debouncedUpdate();
+        }
+      });
+    } else if (f.type === 'textarea') {
+      fDiv.innerHTML += `<textarea id="${fid}" rows="5">${esc(sec.fields[f.key]||'')}</textarea>`;
+      fDiv.querySelector('textarea').addEventListener('input', e => { sec.fields[f.key] = e.target.value; debouncedUpdate(); });
+    } else {
+      fDiv.innerHTML += `<input type="${f.type==='url'?'url':'text'}" id="${fid}" value="${esc(sec.fields[f.key]||'')}" placeholder="${f.type==='url'?'https://…':''}">`;
+      fDiv.querySelector('input').addEventListener('input', e => { sec.fields[f.key] = e.target.value; debouncedUpdate(); });
+    }
+    div.appendChild(fDiv);
+  });
+
+  return div;
+}
+
+function handleExtraImageUpload(e, secId, slotKey) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const sec = extraSections.find(s => s.id === secId);
+  if (!sec) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    compressImage(ev.target.result, { maxPx: 480, quality: 0.7, targetBytes: 35 * 1024 }, dataUrl => {
+      sec.imgUploads[slotKey] = dataUrl;
+      const imgEl  = document.getElementById(`xslotImg_${secId}_${slotKey}`);
+      const slotEl = document.getElementById(`xslot_${secId}_${slotKey}`);
+      if (!sec.imgUrls?.[slotKey]) { // only update preview if no hosted URL set
+        if (imgEl) { imgEl.src = dataUrl; imgEl.style.display = 'block'; }
+        if (slotEl) slotEl.classList.add('has-image');
+      }
+      debouncedUpdate();
+    });
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function buildPropertyBlockHtml(sec, accentOverride) {
+  const f = sec.fields;
+  // Resolve image: hosted URL takes priority over uploaded data URL
+  function img(key) { return (sec.imgUrls && sec.imgUrls[key]) || (sec.imgUploads && sec.imgUploads[key]) || null; }
+  const imgs = { hero: img('hero'), sideA: img('sideA'), sideB: img('sideB') };
+  const accent = accentOverride || (currentTpl === 'pepa' ? '#d4ad51' : '#7d1026');
+  const btnTxt = accent === '#d4ad51' ? '#222222' : '#ffffff';
+  const font   = "'Helvetica Neue',Helvetica,Arial,Verdana,sans-serif";
+
+  function ph(label, h) {
+    return `<table width="100%" border="0" cellpadding="0" cellspacing="0"><tbody><tr>` +
+      `<td style="height:${h}px;background-color:#e4dbcf;text-align:center;vertical-align:middle;` +
+      `font-family:${font};font-size:12px;color:#8d96a3">${label}</td></tr></tbody></table>`;
+  }
+  // Wrap image (or placeholder) in an 85%-wide centred table, matching original template sizing.
+  // Layout A hero uses 24px outer padding → 85% of 612px ≈ 520px (original: 520px)
+  // Layout B single uses 16px outer padding → 85% of 628px ≈ 534px (original: 534px)
+  function heroImg(key, label, h, outerPad) {
+    const inner = imgs[key]
+      ? `<img src="${imgs[key]}" width="100%" style="display:block;border:0;max-width:100%" alt="">`
+      : ph(label, h);
+    return `<tr><td style="padding:0 ${outerPad}px 12px;text-align:center">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" width="85%" style="max-width:85%">
+        <tbody><tr><td style="padding:0">${inner}</td></tr></tbody>
+      </table>
+    </td></tr>`;
+  }
+  function imgOrPh(key, label, h) {
+    return imgs[key]
+      ? `<img src="${imgs[key]}" width="100%" style="display:block;border:0;max-width:100%" alt="">`
+      : ph(label, h);
+  }
+  // Two side-by-side photos: 50% cols with 6px inner padding each side.
+  // Matches original template structure: 330px col − 12px padding = 318px each ≈ original 286px rendered width.
+  function twoCols(h) {
+    return `<tr><td style="padding:0 0 12px">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0"><tbody><tr>
+        <td width="50%" style="padding:0 6px 0 6px">${imgOrPh('sideA','Side A',h)}</td>
+        <td width="50%" style="padding:0 6px 0 6px">${imgOrPh('sideB','Side B',h)}</td>
+      </tr></tbody></table>
+    </td></tr>`;
+  }
+
+  // Per-section button colors override the template accent
+  const btnBg  = f.btnBgColor   || accent;
+  const btnFg  = f.btnTextColor || (isColorDark(btnBg) ? '#ffffff' : '#222222');
+
+  // Title colour: match original templates (#2d000a for Urban/Custom, #474747 for Pepa)
+  const titleColor    = currentTpl === 'pepa' ? '#474747' : '#2d000a';
+  // Divider colour: Urban Estate=#681124, Pepa=#222222, Custom=beige
+  const dividerColor  = currentTpl === 'pepa' ? '#222222' : (currentTpl === 'urban' ? '#681124' : '#e4dbcf');
+  // Description text: originals use rgb(34,34,34)=#222222 (CSS default for .mceText p)
+  const descTextColor = '#222222';
+  // Title: 14px bold, centered — exact match of original mceText title block structure
+  const titleRow  = `<tr><td style="padding:22px 24px 12px;text-align:center">
+    <p style="margin:0;font-family:${font};font-size:14px;line-height:1.4;text-align:center">
+      <strong><span style="color:${titleColor}">${esc(f.title||'')}</span></strong>
+    </p>
+  </td></tr>`;
+  const descRow   = `<tr><td style="padding:0 24px 12px;font-family:${font};font-size:14px;color:${descTextColor};line-height:1.5;text-align:justify">${esc(f.desc||'').replace(/\n/g,'<br>')}</td></tr>`;
+  const specsRow  = `<tr><td style="padding:0 24px 14px;font-family:${font};font-size:14px;color:#474747;text-align:center">${esc(f.specs||'')}</td></tr>`;
+  // Layout A: hero uses 24px outer pad → ~520px; Layout B: 16px → ~534px
+  const heroRowA  = heroImg('hero', 'Hero Photo', 255, 24);
+  const heroRowB  = heroImg('hero', 'Hero / GIF', 265, 16);
+  const divider   = `<tr><td style="padding:12px 20px"><table width="100%" border="0" cellpadding="0" cellspacing="0"><tbody><tr><td style="min-width:100%;border-top-width:1px;border-top-style:solid;border-top-color:${dividerColor};line-height:0;font-size:0">&nbsp;</td></tr></tbody></table></td></tr>`;
+  const btnRow    = f.btnLabel ? `<tr><td style="padding:12px 24px 28px;text-align:center">
+    <table align="center" border="0" cellpadding="0" cellspacing="0"><tbody><tr>
+      <td style="background-color:${btnBg};border-radius:50px;text-align:center">
+        <a href="${esc(f.btnUrl||'#')}" target="_blank" style="background-color:${btnBg};border-radius:50px;color:${btnFg};display:block;font-family:${font};font-size:14px;font-weight:bold;padding:14px 28px;text-decoration:none;letter-spacing:3px">${esc(f.btnLabel)}</a>
+      </td>
+    </tr></tbody></table>
+  </td></tr>` : '';
+
+  // Layout order matches original Mailchimp templates:
+  // A: divider → title → hero → description → 2 side photos → specs → button
+  // B: divider → title → hero/GIF → description → specs → button
+  // C: divider → title → 2 side photos → specs → description → button
+  let rows;
+  if (sec.type === 1) {
+    // Layout A: Hero (~520px) + title + description + 2 side photos + specs + button
+    rows = [divider, titleRow, heroRowA, descRow, twoCols(180), specsRow, btnRow];
+  } else if (sec.type === 2) {
+    // Layout B: Single photo (~534px) + title + description + specs + button
+    rows = [divider, titleRow, heroRowB, descRow, specsRow, btnRow];
+  } else {
+    // Layout C: 2 side photos + title + specs + description + button
+    rows = [divider, titleRow, twoCols(200), specsRow, descRow, btnRow];
+  }
+
+  return `<table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color:#ffffff"><tbody>
+    ${rows.join('')}
+  </tbody></table>`;
+}
+
+// Find the TR in the shared content tbody that marks the start of the CTA area.
+// For templates with 4 buttons (Urban Estate), button[3] is already in TR[20] of the
+// shared tbody, and mceText[12] is in TR[21]. We must insert before TR[20] (the CTA
+// button TR), not TR[21]. For templates with 3 buttons (Pepa), mceText[12] is the
+// last content TR and we insert before it.
+// Strategy: walk up from the appropriate anchor (button[3] or mceText[12]) and find
+// the first TR that is a direct child of the "shared content tbody" — identified as
+// a TBODY with ≥10 direct children that also contains mceButtonLink elements.
+function _findCtaTrInContentTbody(dom) {
+  const btns     = [...dom.querySelectorAll('a.mceButtonLink')];
+  const textDivs = [...dom.querySelectorAll('.mceText')];
+  // Use button[3] if template already has 4 CTA buttons (Urban Estate),
+  // otherwise use the CTA-note text div (Pepa / injected-button templates).
+  const anchorEl = btns.length >= 4 ? btns[3] : textDivs[12];
+  if (!anchorEl) return null;
+  let candidate = null;
+  let el = anchorEl;
+  while (el.parentElement) {
+    el = el.parentElement;
+    if (el.tagName === 'TR') {
+      candidate = el;
+    } else if (el.tagName === 'TBODY' && candidate) {
+      // The shared content tbody has many direct children and contains property buttons.
+      if (el.children.length >= 10 && el.querySelector('a.mceButtonLink')) {
+        return { tr: candidate, tbody: el };
+      }
+      candidate = null; // wrong tbody — keep climbing
+    }
+  }
+  return null;
+}
+
+function injectExtraSections(dom) {
+  if (!extraSections.length) return;
+
+  // Primary strategy: find the CTA-text TR in the shared content tbody and
+  // insert extra sections immediately BEFORE it.
+  const found = _findCtaTrInContentTbody(dom);
+  if (found) {
+    extraSections.forEach(sec => {
+      const tr = dom.createElement('tr');
+      tr.innerHTML = `<td style="padding:0">${buildPropertyBlockHtml(sec)}</td>`;
+      found.tbody.insertBefore(tr, found.tr);
+    });
+    return;
+  }
+
+  // Fallback: find biggest tbody and append
+  const tbodies = [...dom.querySelectorAll('table > tbody')];
+  const tb = tbodies.sort((a, b) => b.children.length - a.children.length)[0];
+  if (tb) {
+    extraSections.forEach(sec => {
+      const tr = dom.createElement('tr');
+      tr.innerHTML = `<td style="padding:0">${buildPropertyBlockHtml(sec)}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+}
+
+// ── Session persistence ───────────────────────────────────────
+function saveSession() {
+  try {
+    const state = {
+      tpl: currentTpl,
+      custom: currentTpl === 'custom' ? Object.assign({}, customConfig, { logoDataUrl: null }) : null,
+      extras: extraSections.map(s => ({
+        id: s.id,
+        type: s.type,
+        fields: Object.assign({}, s.fields),
+        // skip imgUploads (too large for localStorage)
+      })),
+      nextId: _extraId,
+    };
+    localStorage.setItem('ec_session', JSON.stringify(state));
+  } catch(e) {}
+}
+
+function loadSession() {
+  try {
+    const raw = localStorage.getItem('ec_session');
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    if (!state || !state.tpl) return;
+    if (state.tpl === 'custom') {
+      loadTemplate('custom').then ? null : null; // loadTemplate for custom is sync
+      loadTemplate('custom');
+      if (state.custom) {
+        Object.assign(customConfig, state.custom);
+        customConfig.logoDataUrl = null; // never restore large data URLs
+      }
+      if (state.extras && state.extras.length) {
+        extraSections = state.extras.map(s => ({
+          id: s.id, type: s.type,
+          fields: s.fields || {},
+          imgUploads: {},
+        }));
+        _extraId = state.nextId || extraSections.length;
+      }
+      buildCustomForm();
+      updatePreview();
+    }
+  } catch(e) {}
+}
+
+function newSession() {
+  try { localStorage.removeItem('ec_session'); } catch(e) {}
+  backToPicker();
+}
+
+function injectCtaButton(dom, text, url) {
+  const existingBtn = dom.querySelector('a.mceButtonLink');
+  const btnBg    = existingBtn?.style?.backgroundColor || (currentTpl === 'pepa' ? '#d4ad51' : '#7d1026');
+  const btnColor = existingBtn?.style?.color           || (currentTpl === 'pepa' ? '#222222' : '#ffffff');
+  const font = "'Helvetica Neue',Helvetica,Arial,Verdana,sans-serif";
+
+  const tr = dom.createElement('tr');
+  tr.innerHTML = `<td style="padding:20px 24px;text-align:center;background-color:#ffffff">
+    <table align="center" border="0" cellpadding="0" cellspacing="0"><tbody><tr>
+      <td style="background-color:${btnBg};border-radius:50px;text-align:center">
+        <a href="${url}" target="_blank" class="mceButtonLink"
+          style="background-color:${btnBg};border-radius:50px;color:${btnColor};display:block;font-family:${font};font-size:14px;font-weight:bold;padding:16px 28px;text-decoration:none;letter-spacing:3px">${text}</a>
+      </td>
+    </tr></tbody></table>
+  </td>`;
+
+  // Insert before the CTA-text TR in the shared content tbody — this places the
+  // CTA button after all extra property sections but before the CTA note text.
+  const found = _findCtaTrInContentTbody(dom);
+  if (found) {
+    found.tbody.insertBefore(tr, found.tr);
+    return;
+  }
+
+  // Fallback: insert after the last mceButtonLink's mceRow ancestor
+  const btns = [...dom.querySelectorAll('a.mceButtonLink')];
+  if (!btns.length) return;
+  let anchor = btns[btns.length - 1];
+  while (anchor && !(anchor.tagName === 'TR' && anchor.classList.contains('mceRow'))) {
+    anchor = anchor.parentElement;
+  }
+  if (!anchor) return;
+  anchor.parentNode.insertBefore(tr, anchor.nextSibling);
+}
+</script>
+</body>
+</html>

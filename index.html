@@ -1,0 +1,1275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Batch Watermark Tool</title>
+  <link rel="icon" type="image/png" href="icon-cabernet.png">
+  <script src="lang.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8f4ec;
+      --surface: #fffaf3;
+      --surface-2: #f3ede3;
+      --header: #f7f3ec;
+      --text: #221815;
+      --muted: #8d96a3;
+      --border: #e4dbcf;
+      --accent: #7d1026;
+      --accent-2: #5f0b1c;
+      --accent-soft: #efe2cf;
+      --shadow: rgba(69, 38, 26, 0.08);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    header { background: var(--header); border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px var(--shadow); }
+    .header-inner { max-width: 1100px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .header-inner h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+    .hamburger { display: none; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 20px; cursor: pointer; color: var(--accent); line-height: 1; box-shadow: none; }
+    .header-nav { display: flex; gap: 2px; align-items: center; }
+    .nav-link { padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; display: inline-block; white-space: nowrap; }
+    .nav-link:hover { color: var(--accent); }
+    .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); }
+    @media (max-width: 760px) {
+      .hamburger { display: inline-block; }
+      .header-nav { display: none; flex-direction: column; align-items: stretch; width: 100%; padding: 6px 0; border-top: 1px solid var(--border); margin-top: 6px; }
+      .header-nav.open { display: flex; }
+      .nav-link { border-bottom: none; border-radius: 8px; padding: 10px 12px; }
+      .nav-link.active { background: #f0e5d8; }
+    }
+
+    main { padding: 18px 20px; max-width: 1100px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 360px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 8px 24px var(--shadow);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: var(--accent);
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #7e756d;
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .drop {
+      border: 2px dashed #d8c9b7;
+      background: var(--surface-2);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .drop.dragover {
+      border-color: var(--accent);
+      background: #f0e5d8;
+    }
+
+    .drop strong { display: block; font-size: 13px; color: var(--accent); }
+    .drop span { display: block; font-size: 12px; color: #756d66; margin-top: 4px; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row1 { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--text);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input[type="file"], select, input[type="range"], input[type="number"] {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 13px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input[type="range"] { padding: 10px 8px; }
+    .inline { display:flex; gap: 10px; align-items: center; }
+
+    .pill {
+      font-size: 12px;
+      color: var(--accent);
+      background: #fff;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 999px;
+      min-width: 52px;
+      text-align: center;
+    }
+
+    .btnbar { display:flex; gap:10px; flex-wrap: wrap; margin-top: 10px; }
+
+    button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(125, 16, 38, 0.15);
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--accent);
+      border-color: var(--border);
+      box-shadow: none;
+    }
+
+    button:disabled { opacity:.5; cursor:not-allowed; }
+
+    .list { display:grid; gap: 12px; }
+
+    .item {
+      display:grid;
+      grid-template-columns: 160px 1fr;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fffdf9;
+    }
+
+    @media (max-width: 560px) { .item { grid-template-columns: 1fr; } }
+
+    .thumb {
+      width: 160px;
+      aspect-ratio: 4 / 3;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow:hidden;
+      background:#f6f0e6;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .thumb canvas { width: 100%; height: 100%; display:block; }
+
+    .meta { display:flex; flex-direction: column; gap: 6px; }
+    .meta .name { font-size: 13px; font-weight: 600; color:var(--accent); word-break: break-word; }
+    .meta .sub { font-size: 12px; color:#7e756d; }
+
+    .meta .actions { display:flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+
+    .meta .actions a, .meta .actions button {
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background:#fff;
+      color:var(--accent);
+      font-size: 13px;
+      cursor:pointer;
+      box-shadow: none;
+    }
+
+    .meta .actions button.danger {
+      border-color:#e7c6cb;
+      background:#fff;
+      color:#8c2436;
+    }
+
+    footer {
+      padding: 14px 20px;
+      color:#7e756d;
+      font-size: 12px;
+      text-align:center;
+      border-top: 1px solid var(--border);
+      background: var(--header);
+      margin-top: 18px;
+    }
+
+    .ok { color:#065f46; }
+
+    details.card {
+      background: #fdf8f2;
+    }
+
+    summary {
+      color: var(--accent);
+    }
+
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <h1><img src="icon-logotype-cabernet.png" style="height:28px;"></h1>
+    <button class="hamburger" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <nav class="header-nav" id="headerNav">
+      <a href="index.html" class="nav-link active" data-i18n="nav.watermark">Watermark Tool</a>
+      <a href="collage.html" class="nav-link" data-i18n="nav.collage">Collage</a>
+      <a href="gif-maker.html" class="nav-link" data-i18n="nav.gif">GIF Maker</a>
+      <a href="email-campaigns.html" class="nav-link" data-i18n="nav.email">Email Campaigns</a>
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="bg">BG</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2 data-i18n="w.step1">1) Add photos</h2>
+      <div id="drop" class="drop" tabindex="0">
+        <strong data-i18n="drop.strong">Drag &amp; drop photos here</strong>
+        <span data-i18n="drop.span">or click to select multiple images</span>
+      </div>
+      <input id="photosInput" type="file" accept="image/*" multiple style="display:none" />
+
+      <hr style="border:none;border-top:1px solid #eef2f7;margin:14px 0;">
+
+      <h2 data-i18n="w.step2">2) Watermark logo</h2>
+      <div class="row1">
+        <div>
+          <label data-i18n="w.chooseLogo">Choose logo (PNG recommended)</label>
+          <input id="logoInput" type="file" accept="image/*" />
+          <div id="rememberedLogoStatus" class="hint" data-i18n="w.logoRemembered">Your last logo is remembered automatically in this browser.</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 10px;">
+        <div>
+          <label data-i18n="w.opacity">Opacity</label>
+          <div class="inline">
+            <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.35" />
+            <span id="opacityVal" class="pill">0.35</span>
+          </div>
+        </div>
+        <div>
+          <label data-i18n="w.size">Size (% of photo width)</label>
+          <div class="inline">
+            <input id="scale" type="range" min="5" max="60" step="1" value="20" />
+            <span id="scaleVal" class="pill">20%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 10px;">
+        <div>
+          <label data-i18n="w.position">Position</label>
+          <select id="position">
+            <option value="br" data-i18n="pos.br">Bottom-right</option>
+            <option value="bl" data-i18n="pos.bl">Bottom-left</option>
+            <option value="tr" data-i18n="pos.tr">Top-right</option>
+            <option value="tl" data-i18n="pos.tl">Top-left</option>
+            <option value="c" selected data-i18n="pos.c">Center</option>
+          </select>
+        </div>
+        <div>
+          <label data-i18n="w.margin">Margin (px)</label>
+          <input id="margin" type="number" min="0" step="1" value="24" />
+        </div>
+      </div>
+
+      <details class="card" style="margin-top: 10px; padding: 10px 12px;">
+        <summary style="cursor:pointer; font-size:13px; font-weight:600; color:#111827;" data-i18n="w.advanced">Advanced options</summary>
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label data-i18n="w.format">Output format</label>
+            <select id="format">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg" selected>JPG</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="w.quality">JPG quality</label>
+            <div class="inline">
+              <input id="quality" type="range" min="0.5" max="1" step="0.01" value="0.92" />
+              <span id="qualityVal" class="pill">0.92</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label data-i18n="w.previewCap">Preview resolution cap</label>
+            <select id="previewCap">
+              <option value="600">600px</option>
+              <option value="900" selected>900px (recommended)</option>
+              <option value="1200">1200px</option>
+            </select>
+            <div class="hint" data-i18n="w.previewCapHint">Higher = sharper previews, but slower on big batches.</div>
+          </div>
+          <div>
+            <label data-i18n="w.batchSize">Preview batch size</label>
+            <select id="batchSize">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="8">8</option>
+            </select>
+            <div class="hint" data-i18n="w.batchSizeHint">How many previews render per frame.</div>
+          </div>
+        </div>
+      </details>
+
+      <div class="row" style="margin-top: 10px;">
+        <div>
+          <h2 data-i18n="w.step3">3) Border / Background</h2>
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input id="frameEnabled" type="checkbox" style="width:auto;" />
+            <span data-i18n="w.addFrame">Add coloured background/frame</span>
+          </label>
+          <div class="hint" data-i18n="w.addFrameHint">Turn on to add a coloured area around the image.</div>
+        </div>
+        <div>
+          <label data-i18n="w.frameColor">Frame colour</label>
+          <input id="frameColor" type="color" value="#ffffff" />
+          <div class="hint" data-i18n="w.frameColorHint">Choose the background/border colour.</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 10px;">
+        <div>
+          <label data-i18n="w.frameSides">Frame sides</label>
+          <select id="frameSides">
+            <option value="all" selected data-i18n="pos.all">All sides</option>
+            <option value="tb" data-i18n="pos.tb">Only top / bottom</option>
+            <option value="lr" data-i18n="pos.lr">Only left / right</option>
+          </select>
+          <div class="hint" data-i18n="w.frameSidesHint">Choose where the coloured border appears.</div>
+        </div>
+        <div>
+          <label data-i18n="w.frameScale">Image scale inside frame</label>
+          <div class="inline">
+            <input id="frameImageScale" type="range" min="40" max="100" step="1" value="70" />
+            <span id="frameImageScaleVal" class="pill">70%</span>
+          </div>
+          <div class="hint" data-i18n="w.frameScaleHint">Smaller value = larger visible frame area.</div>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #eef2f7;margin:14px 0;">
+
+      <h2 data-i18n="w.step4">4) Text overlay</h2>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input id="textOverlayEnabled" type="checkbox" style="width:auto;" />
+        <span data-i18n="w.addText">Add text overlay to images</span>
+      </label>
+      <div class="hint" data-i18n="w.addTextHint">Add a text label on top of your images.</div>
+
+      <div id="textOverlayOptions" style="display:none; margin-top:10px;">
+        <div id="textOverlayList"></div>
+        <button id="addTextOverlay" class="secondary" type="button" style="margin-top:8px;font-size:12px;width:100%;box-sizing:border-box;" data-i18n="w.addAnotherText">+ Add another text</button>
+        <div class="hint" style="margin-top:8px;" data-i18n="w.textToggleHint">Use the toggle on each photo in the preview panel to apply or skip.</div>
+      </div>
+
+      <div class="btnbar">
+        <button id="refresh" class="secondary" type="button" data-i18n="btn.refresh">Refresh previews</button>
+        <button id="downloadAll" type="button" disabled data-i18n="btn.downloadZip">Download all (ZIP)</button>
+        <button id="clearAll" class="secondary" type="button" data-i18n="btn.clear">Clear</button>
+      </div>
+
+      <div id="status" class="hint" style="margin-top:10px;"></div>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="w.step5">5) Preview &amp; download</h2>
+      <div id="count" class="hint" data-i18n="w.count.none">No photos added yet.</div>
+      <div id="list" class="list" style="margin-top: 10px;"></div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  &copy; 2026
+  <a href="https://www.urbanestate.bg/home" target="_blank">Urban Estate</a>
+  <span data-i18n="footer.and">and</span>
+  <a href="https://www.pepapetrovaadvisory.com" target="_blank">Pepa Petrova Advisory</a>.
+  <span data-i18n="footer.rights">All rights reserved.</span>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<script>
+  const drop = document.getElementById('drop');
+  const photosInput = document.getElementById('photosInput');
+  const logoInput = document.getElementById('logoInput');const rememberedLogoStatusEl = document.getElementById('rememberedLogoStatus');
+
+  const opacityEl = document.getElementById('opacity');
+  const opacityVal = document.getElementById('opacityVal');
+  const scaleEl = document.getElementById('scale');
+  const scaleVal = document.getElementById('scaleVal');
+  const positionEl = document.getElementById('position');
+  const marginEl = document.getElementById('margin');
+  const formatEl = document.getElementById('format');
+  const qualityEl = document.getElementById('quality');
+  const qualityVal = document.getElementById('qualityVal');
+
+  const previewCapEl = document.getElementById('previewCap');
+  const batchSizeEl = document.getElementById('batchSize');
+  const frameEnabledEl = document.getElementById('frameEnabled');
+  const frameColorEl = document.getElementById('frameColor');
+  const frameSidesEl = document.getElementById('frameSides');
+  const frameImageScaleEl = document.getElementById('frameImageScale');
+  const frameImageScaleVal = document.getElementById('frameImageScaleVal');
+
+  const refreshBtn = document.getElementById('refresh');
+  const downloadAllBtn = document.getElementById('downloadAll');
+  const clearAllBtn = document.getElementById('clearAll');
+
+  const listEl = document.getElementById('list');
+  const countEl = document.getElementById('count');
+  const statusEl = document.getElementById('status');
+
+  const photos = [];
+  let logo = null;
+  let previewRenderToken = 0;
+
+  function setStatus(msg, ok=false) {
+    statusEl.textContent = msg || '';
+    statusEl.className = 'hint' + (ok ? ' ok' : '');
+  }
+
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+
+  function safeBaseName(filename) {
+    const dot = filename.lastIndexOf('.');
+    return (dot > 0 ? filename.slice(0, dot) : filename).replace(/[^\w\-]+/g, '_');
+  }
+
+  function outputExt(mime) {
+    return mime === 'image/png' ? 'png' : 'jpg';
+  }
+
+  async function fileToBitmap(file) {
+    return await createImageBitmap(file);
+  }
+
+
+  const REMEMBERED_LOGO_KEY = 'remembered_logo';
+  const REMEMBERED_TEXT_COLOR_KEY = 'remembered_text_color';
+
+  // Load remembered text colour once at startup
+  let rememberedTextColor = '#000000';
+  try {
+    const saved = localStorage.getItem(REMEMBERED_TEXT_COLOR_KEY);
+    if (saved) rememberedTextColor = saved;
+  } catch {}
+
+  function setRememberedLogoStatus(msg) {
+    if (rememberedLogoStatusEl) rememberedLogoStatusEl.textContent = msg;
+  }
+
+  async function loadRememberedLogo() {
+    try {
+      const saved = localStorage.getItem(REMEMBERED_LOGO_KEY);
+      if (!saved) {
+        setRememberedLogoStatus('Your last logo is remembered automatically in this browser.');
+        return;
+      }
+
+      const res = await fetch(saved);
+      const blob = await res.blob();
+      const rawBitmap = await createImageBitmap(blob);
+      const trimmedBitmap = await trimTransparentEdges(rawBitmap, 8);
+
+      if (trimmedBitmap !== rawBitmap) {
+        try { rawBitmap.close?.(); } catch {}
+      }
+
+      if (logo?.bitmap) {
+        try { logo.bitmap.close?.(); } catch {}
+      }
+
+      logo = {
+        file: null,
+        bitmap: trimmedBitmap,
+        w: trimmedBitmap.width,
+        h: trimmedBitmap.height
+      };
+
+      setRememberedLogoStatus('Saved logo loaded automatically.');
+      schedulePreviewRender('saved logo');
+    } catch (e) {
+      console.error(e);
+      setRememberedLogoStatus('Could not load saved logo.');
+    }
+  }
+
+  function updateBadges() {
+    opacityVal.textContent = parseFloat(opacityEl.value).toFixed(2);
+    scaleVal.textContent = `${parseInt(scaleEl.value, 10)}%`;
+    qualityVal.textContent = parseFloat(qualityEl.value).toFixed(2);
+    frameImageScaleVal.textContent = `${parseInt(frameImageScaleEl.value, 10)}%`;
+  }
+
+  function updateCount() {
+    const n = photos.length;
+    countEl.removeAttribute('data-i18n');
+    countEl.textContent = n === 0 ? _T('w.count.none') : _T('w.count.loaded', { n });
+    downloadAllBtn.disabled = n === 0;
+  }
+
+  function computeWatermarkRect(canvasW, canvasH, logoW, logoH) {
+    const opacity = parseFloat(opacityEl.value);
+    const scalePct = parseFloat(scaleEl.value) / 100;
+    const pos = positionEl.value;
+    const margin = clamp(parseInt(marginEl.value || '0', 10), 0, 100000);
+
+    const targetW = Math.max(1, Math.round(canvasW * scalePct));
+    const logoAspect = logoW / logoH;
+    const targetH = Math.max(1, Math.round(targetW / logoAspect));
+
+    let x = margin, y = margin;
+    if (pos.includes('b')) y = canvasH - targetH - margin;
+    if (pos.includes('r')) x = canvasW - targetW - margin;
+    if (pos === 'c') { x = (canvasW - targetW) / 2; y = (canvasH - targetH) / 2; }
+    if (pos === 'tl') { x = margin; y = margin; }
+    if (pos === 'tr') { x = canvasW - targetW - margin; y = margin; }
+    if (pos === 'bl') { x = margin; y = canvasH - targetH - margin; }
+    if (pos === 'br') { x = canvasW - targetW - margin; y = canvasH - targetH - margin; }
+
+    return { x, y, w: targetW, h: targetH, opacity };
+  }
+
+  async function trimTransparentEdges(bitmap, alphaThreshold = 8) {
+    const temp = document.createElement('canvas');
+    temp.width = bitmap.width;
+    temp.height = bitmap.height;
+
+    const ctx = temp.getContext('2d', { willReadFrequently: true });
+    ctx.clearRect(0, 0, temp.width, temp.height);
+    ctx.drawImage(bitmap, 0, 0);
+
+    const img = ctx.getImageData(0, 0, temp.width, temp.height);
+    const data = img.data;
+
+    let minX = temp.width;
+    let minY = temp.height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < temp.height; y++) {
+      for (let x = 0; x < temp.width; x++) {
+        const i = (y * temp.width + x) * 4;
+        const a = data[i + 3];
+        if (a > alphaThreshold) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX === -1 || maxY === -1) {
+      return bitmap;
+    }
+
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+
+    if (w === bitmap.width && h === bitmap.height) {
+      return bitmap;
+    }
+
+    const trimmed = document.createElement('canvas');
+    trimmed.width = w;
+    trimmed.height = h;
+    const tctx = trimmed.getContext('2d');
+    tctx.clearRect(0, 0, w, h);
+    tctx.drawImage(temp, minX, minY, w, h, 0, 0, w, h);
+
+    return await createImageBitmap(trimmed);
+  }
+
+  let textOverlayIds = [];
+  let nextTextId = 0;
+
+  function getOverlaySettings(id) {
+    return {
+      text: (document.getElementById(`textContent_${id}`)?.value || '').trim(),
+      color: document.getElementById(`textColor_${id}`)?.value || '#000000',
+      bgEnabled: document.getElementById(`textBgEnabled_${id}`)?.checked || false,
+      bgColor: document.getElementById(`textBgColor_${id}`)?.value || '#ffffff',
+      position: document.getElementById(`textPosition_${id}`)?.value || 'tc',
+      fontSizePct: parseFloat(document.getElementById(`textFontSize_${id}`)?.value || '4') / 100,
+      placement: document.getElementById(`textPlacement_${id}`)?.value || 'image'
+    };
+  }
+
+  function getAllTextOverlays() {
+    if (!document.getElementById('textOverlayEnabled').checked) return [];
+    return textOverlayIds.map(id => getOverlaySettings(id));
+  }
+
+  function createOverlaySection(id) {
+    const section = document.createElement('div');
+    section.id = `textSection_${id}`;
+    section.style.cssText = 'border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:10px;background:#fdf8f2;';
+
+    section.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="text-overlay-label" style="font-size:12px;font-weight:600;color:var(--accent);"></span>
+        <button type="button" class="remove-text-overlay secondary" data-id="${id}" style="padding:4px 10px;font-size:11px;border-radius:8px;">Remove</button>
+      </div>
+      <div class="row1">
+        <div>
+          <label>Text</label>
+          <input id="textContent_${id}" type="text" placeholder="Enter text…" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:12px;padding:10px;font-size:13px;background:#fff;color:var(--text);" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>Text colour</label>
+          <input id="textColor_${id}" type="color" value="#000000" />
+        </div>
+        <div>
+          <label style="display:flex;align-items:center;gap:6px;">
+            <input id="textBgEnabled_${id}" type="checkbox" style="width:auto;" />
+            Background colour
+          </label>
+          <input id="textBgColor_${id}" type="color" value="#ffffff" style="display:none;" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>Position</label>
+          <select id="textPosition_${id}">
+            <option value="tc" selected>Top center</option>
+            <option value="tl">Top left</option>
+            <option value="tr">Top right</option>
+            <option value="bc">Bottom center</option>
+            <option value="bl">Bottom left</option>
+            <option value="br">Bottom right</option>
+            <option value="c">Center</option>
+          </select>
+        </div>
+        <div>
+          <label>Text size (% of height)</label>
+          <div class="inline">
+            <input id="textFontSize_${id}" type="range" min="1" max="20" step="0.5" value="4" />
+            <span id="textFontSizeVal_${id}" class="pill">4%</span>
+          </div>
+        </div>
+      </div>
+      <div class="row1" style="margin-top:10px;">
+        <div>
+          <label>Place text on</label>
+          <select id="textPlacement_${id}">
+            <option value="image" selected>Image (inside image area)</option>
+            <option value="frame">Border / frame area</option>
+          </select>
+          <div class="hint">Only has a visible effect when a border/frame is active.</div>
+        </div>
+      </div>`;
+
+    // remember text colour
+    const textColorInput = section.querySelector(`#textColor_${id}`);
+    textColorInput.value = rememberedTextColor;
+    textColorInput.addEventListener('change', () => {
+      rememberedTextColor = textColorInput.value;
+      try { localStorage.setItem(REMEMBERED_TEXT_COLOR_KEY, rememberedTextColor); } catch {}
+    });
+
+    // bg colour toggle
+    const bgChk = section.querySelector(`#textBgEnabled_${id}`);
+    const bgPicker = section.querySelector(`#textBgColor_${id}`);
+    bgChk.addEventListener('change', () => {
+      bgPicker.style.display = bgChk.checked ? 'block' : 'none';
+      schedulePreviewRender('text bg toggle');
+    });
+
+    // font size badge
+    const fontSlider = section.querySelector(`#textFontSize_${id}`);
+    const fontBadge = section.querySelector(`#textFontSizeVal_${id}`);
+    fontSlider.addEventListener('input', () => {
+      fontBadge.textContent = `${parseFloat(fontSlider.value)}%`;
+    });
+
+    // remove button
+    section.querySelector('.remove-text-overlay').addEventListener('click', () => {
+      removeTextOverlay(id);
+    });
+
+    // all controls trigger preview re-render
+    section.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('input', () => schedulePreviewRender('text settings'));
+      el.addEventListener('change', () => schedulePreviewRender('text settings'));
+    });
+
+    return section;
+  }
+
+  function refreshOverlayLabels() {
+    textOverlayIds.forEach((id, i) => {
+      const label = document.querySelector(`#textSection_${id} .text-overlay-label`);
+      if (label) label.textContent = `Text ${i + 1}`;
+      const removeBtn = document.querySelector(`#textSection_${id} .remove-text-overlay`);
+      if (removeBtn) removeBtn.style.display = textOverlayIds.length > 1 ? 'inline-flex' : 'none';
+    });
+  }
+
+  function addTextOverlay() {
+    const id = nextTextId++;
+    textOverlayIds.push(id);
+    const list = document.getElementById('textOverlayList');
+    list.appendChild(createOverlaySection(id));
+    refreshOverlayLabels();
+    schedulePreviewRender('text overlay added');
+  }
+
+  function removeTextOverlay(id) {
+    textOverlayIds = textOverlayIds.filter(x => x !== id);
+    document.getElementById(`textSection_${id}`)?.remove();
+    refreshOverlayLabels();
+    schedulePreviewRender('text overlay removed');
+  }
+
+  function drawTextOverlay(ctx, imageRect, textSettings) {
+    if (!textSettings.text) return;
+
+    const fontSize = Math.max(8, Math.round(imageRect.h * textSettings.fontSizePct));
+    const padding = Math.round(fontSize * 0.4);
+    const margin = Math.round(fontSize * 0.5);
+
+    ctx.save();
+    ctx.font = `bold ${fontSize}px system-ui, -apple-system, Arial, sans-serif`;
+    ctx.textBaseline = 'middle';
+
+    const textW = ctx.measureText(textSettings.text).width;
+    const boxW = textW + padding * 2;
+    const boxH = fontSize + padding * 2;
+
+    const pos = textSettings.position;
+    let boxX, boxY;
+
+    if (pos === 'tc') {
+      boxX = imageRect.x + (imageRect.w - boxW) / 2;
+      boxY = imageRect.y + margin;
+    } else if (pos === 'tl') {
+      boxX = imageRect.x + margin;
+      boxY = imageRect.y + margin;
+    } else if (pos === 'tr') {
+      boxX = imageRect.x + imageRect.w - boxW - margin;
+      boxY = imageRect.y + margin;
+    } else if (pos === 'bc') {
+      boxX = imageRect.x + (imageRect.w - boxW) / 2;
+      boxY = imageRect.y + imageRect.h - boxH - margin;
+    } else if (pos === 'bl') {
+      boxX = imageRect.x + margin;
+      boxY = imageRect.y + imageRect.h - boxH - margin;
+    } else if (pos === 'br') {
+      boxX = imageRect.x + imageRect.w - boxW - margin;
+      boxY = imageRect.y + imageRect.h - boxH - margin;
+    } else {
+      boxX = imageRect.x + (imageRect.w - boxW) / 2;
+      boxY = imageRect.y + (imageRect.h - boxH) / 2;
+    }
+
+    if (textSettings.bgEnabled) {
+      ctx.fillStyle = textSettings.bgColor;
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+    }
+
+    ctx.fillStyle = textSettings.color;
+    ctx.fillText(textSettings.text, boxX + padding, boxY + boxH / 2);
+
+    ctx.restore();
+  }
+
+  function getFrameSettings() {
+    return {
+      enabled: frameEnabledEl.checked,
+      color: frameColorEl.value,
+      sides: frameSidesEl.value,
+      imageScale: clamp(parseInt(frameImageScaleEl.value || '70', 10), 1, 100) / 100
+    };
+  }
+
+  function getImageRectWithinFrame(outW, outH, frame) {
+    if (!frame.enabled) {
+      return { x: 0, y: 0, w: outW, h: outH };
+    }
+
+    const scale = Math.max(0.01, frame.imageScale);
+    let imageW = outW;
+    let imageH = outH;
+    let imageX = 0;
+    let imageY = 0;
+
+    if (frame.sides === 'all') {
+      imageW = Math.round(outW * scale);
+      imageH = Math.round(outH * scale);
+      imageX = Math.round((outW - imageW) / 2);
+      imageY = Math.round((outH - imageH) / 2);
+    } else if (frame.sides === 'tb') {
+      imageW = outW;
+      imageH = Math.round(outH * scale);
+      imageX = 0;
+      imageY = Math.round((outH - imageH) / 2);
+    } else if (frame.sides === 'lr') {
+      imageW = Math.round(outW * scale);
+      imageH = outH;
+      imageX = Math.round((outW - imageW) / 2);
+      imageY = 0;
+    }
+
+    return { x: imageX, y: imageY, w: imageW, h: imageH };
+  }
+
+  function drawToCanvas(bitmap, canvas, logoBitmap, isPreview, photoObj = null) {
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: isPreview });
+    const frame = getFrameSettings();
+
+    const cap = parseInt(previewCapEl.value, 10);
+    let baseW = bitmap.width;
+    let baseH = bitmap.height;
+
+    if (frame.enabled) {
+      const safeScale = Math.max(0.01, frame.imageScale);
+      if (frame.sides === 'all') {
+        baseW = Math.round(bitmap.width / safeScale);
+        baseH = Math.round(bitmap.height / safeScale);
+      } else if (frame.sides === 'tb') {
+        baseW = bitmap.width;
+        baseH = Math.round(bitmap.height / safeScale);
+      } else if (frame.sides === 'lr') {
+        baseW = Math.round(bitmap.width / safeScale);
+        baseH = bitmap.height;
+      }
+    }
+
+    let outW = baseW;
+    let outH = baseH;
+
+    if (isPreview && outW > cap) {
+      const s = cap / outW;
+      outW = Math.round(outW * s);
+      outH = Math.round(outH * s);
+    }
+
+    if (canvas.width !== outW || canvas.height !== outH) {
+      canvas.width = outW;
+      canvas.height = outH;
+    }
+
+    ctx.clearRect(0, 0, outW, outH);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    const imageRect = getImageRectWithinFrame(outW, outH, frame);
+
+    if (frame.enabled) {
+      ctx.fillStyle = frame.color;
+      ctx.fillRect(0, 0, outW, outH);
+    }
+
+    ctx.globalAlpha = 1;
+    ctx.drawImage(bitmap, imageRect.x, imageRect.y, imageRect.w, imageRect.h);
+
+    if (!logoBitmap) {
+      if (photoObj === null || photoObj.textOverlay !== false) {
+        for (const ts of getAllTextOverlays()) {
+          if (ts.text) drawTextOverlay(ctx, ts.placement === 'frame' ? { x: 0, y: 0, w: outW, h: outH } : imageRect, ts);
+        }
+      }
+      return;
+    }
+
+    const rect = computeWatermarkRect(imageRect.w, imageRect.h, logoBitmap.width, logoBitmap.height);
+    const margin = clamp(parseInt(marginEl.value || '0', 10), 0, 100000);
+    const pos = positionEl.value;
+    let wmX = imageRect.x + rect.x;
+    let wmY = imageRect.y + rect.y;
+
+    if (pos === 'c') {
+      wmX = imageRect.x + (imageRect.w - rect.w) / 2;
+      wmY = imageRect.y + (imageRect.h - rect.h) / 2;
+    } else {
+      if (pos.includes('r')) wmX = imageRect.x + imageRect.w - rect.w - margin;
+      else wmX = imageRect.x + margin;
+
+      if (pos.includes('b')) wmY = imageRect.y + imageRect.h - rect.h - margin;
+      else wmY = imageRect.y + margin;
+
+      if (pos === 'tl') { wmX = imageRect.x + margin; wmY = imageRect.y + margin; }
+      if (pos === 'tr') { wmX = imageRect.x + imageRect.w - rect.w - margin; wmY = imageRect.y + margin; }
+      if (pos === 'bl') { wmX = imageRect.x + margin; wmY = imageRect.y + imageRect.h - rect.h - margin; }
+      if (pos === 'br') { wmX = imageRect.x + imageRect.w - rect.w - margin; wmY = imageRect.y + imageRect.h - rect.h - margin; }
+    }
+
+    ctx.save();
+    ctx.globalAlpha = rect.opacity;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(logoBitmap, wmX, wmY, rect.w, rect.h);
+    ctx.restore();
+
+    if (photoObj === null || photoObj.textOverlay !== false) {
+      for (const ts of getAllTextOverlays()) {
+        if (ts.text) drawTextOverlay(ctx, ts.placement === 'frame' ? { x: 0, y: 0, w: outW, h: outH } : imageRect, ts);
+      }
+    }
+  }
+
+  let sliderRAF = 0;
+  function schedulePreviewRender(reason) {
+    if (sliderRAF) cancelAnimationFrame(sliderRAF);
+    sliderRAF = requestAnimationFrame(() => {
+      sliderRAF = 0;
+      renderPreviewsChunked(reason);
+    });
+  }
+
+  async function renderPreviewsChunked(reason) {
+    const token = ++previewRenderToken;
+    const batchSize = parseInt(batchSizeEl.value, 10);
+
+    if (photos.length === 0) return;
+
+    setStatus(`Rendering previews…${reason ? " ("+reason+")" : ""}`);
+    let i = 0;
+
+    while (i < photos.length) {
+      if (token !== previewRenderToken) return;
+
+      for (let b = 0; b < batchSize && i < photos.length; b++, i++) {
+        const p = photos[i];
+        drawToCanvas(p.bitmap, p.canvasPreview, logo?.bitmap || null, true, p);
+      }
+
+      setStatus(`Rendering previews… ${i}/${photos.length}`);
+      await new Promise(requestAnimationFrame);
+    }
+
+    setStatus('Previews updated.', true);
+  }
+
+  async function canvasToBlob(canvas) {
+    const mime = formatEl.value;
+    const quality = parseFloat(qualityEl.value);
+    return new Promise((resolve) => {
+      if (mime === 'image/jpeg') canvas.toBlob(b => resolve(b), mime, quality);
+      else canvas.toBlob(b => resolve(b), mime);
+    });
+  }
+
+  async function exportFullResBlob(photoObj) {
+    const off = document.createElement('canvas');
+    drawToCanvas(photoObj.bitmap, off, logo?.bitmap || null, false, photoObj);
+    return await canvasToBlob(off);
+  }
+
+  function makeItemUI(photoObj, idx) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'item';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+
+    const canvas = document.createElement('canvas');
+    photoObj.canvasPreview = canvas;
+    thumb.appendChild(canvas);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+
+    const name = document.createElement('div');
+    name.className = 'name';
+    name.textContent = photoObj.name;
+
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    sub.textContent = 'Preview (fast). Download is full resolution.';
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    const dlBtn = document.createElement('button');
+    dlBtn.type = 'button';
+    dlBtn.textContent = 'Download';
+    dlBtn.addEventListener('click', async () => {
+      try {
+        setStatus('Preparing full-res download…');
+        const blob = await exportFullResBlob(photoObj);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ext = outputExt(formatEl.value);
+        a.download = `${safeBaseName(photoObj.name)}_watermarked.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setStatus('Downloaded.', true);
+      } catch (e) {
+        console.error(e);
+        setStatus('Download failed. See console for details.');
+      }
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'danger';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', () => {
+      try { photoObj.bitmap.close?.(); } catch {}
+      photos.splice(idx, 1);
+      rebuildList();
+    });
+
+    actions.appendChild(dlBtn);
+    actions.appendChild(removeBtn);
+
+    const textRow = document.createElement('label');
+    textRow.className = 'text-overlay-row';
+    textRow.style.cssText = 'display:flex;align-items:center;gap:6px;font-weight:normal;font-size:12px;color:#7e756d;cursor:pointer;margin-top:2px;';
+    textRow.style.display = document.getElementById('textOverlayEnabled').checked ? 'flex' : 'none';
+
+    const textChk = document.createElement('input');
+    textChk.type = 'checkbox';
+    textChk.style.width = 'auto';
+    textChk.checked = photoObj.textOverlay !== false;
+    textChk.addEventListener('change', () => {
+      photoObj.textOverlay = textChk.checked;
+      drawToCanvas(photoObj.bitmap, photoObj.canvasPreview, logo?.bitmap || null, true, photoObj);
+    });
+
+    textRow.appendChild(textChk);
+    textRow.appendChild(document.createTextNode('Apply text overlay'));
+
+    meta.appendChild(name);
+    meta.appendChild(sub);
+    meta.appendChild(actions);
+    meta.appendChild(textRow);
+
+    wrapper.appendChild(thumb);
+    wrapper.appendChild(meta);
+    return wrapper;
+  }
+
+  function rebuildList() {
+    listEl.innerHTML = '';
+    photos.forEach((p, i) => listEl.appendChild(makeItemUI(p, i)));
+    updateCount();
+schedulePreviewRender('list rebuild');
+  }
+
+  async function addFiles(fileList) {
+    const files = [...fileList].filter(f => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+
+    setStatus(`Loading ${files.length} image(s)…`);
+    for (const f of files) {
+      try {
+        const bitmap = await fileToBitmap(f);
+        photos.push({
+          file: f,
+          name: f.name || 'image',
+          bitmap,
+          w: bitmap.width,
+          h: bitmap.height,
+          canvasPreview: document.createElement('canvas')
+        });
+      } catch (e) {
+        console.warn('Failed to load', f.name, e);
+      }
+    }
+    setStatus(`Loaded ${files.length} image(s).`, true);
+    rebuildList();
+  }
+
+  drop.addEventListener('click', () => photosInput.click());
+  drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('dragover');
+    if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
+  });
+  drop.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') photosInput.click();
+  });
+
+  photosInput.addEventListener('change', () => {
+    if (photosInput.files) addFiles(photosInput.files);
+    photosInput.value = '';
+  });
+
+  logoInput.addEventListener('change', async () => {
+    const f = logoInput.files?.[0];
+    if (!f) return;
+
+    try {
+      setStatus('Loading logo…');
+
+      const rawBitmap = await fileToBitmap(f);
+      const trimmedBitmap = await trimTransparentEdges(rawBitmap, 8);
+
+      if (trimmedBitmap !== rawBitmap) {
+        try { rawBitmap.close?.(); } catch {}
+      }
+
+      if (logo?.bitmap) {
+        try { logo.bitmap.close?.(); } catch {}
+      }
+
+      logo = {
+        file: f,
+        bitmap: trimmedBitmap,
+        w: trimmedBitmap.width,
+        h: trimmedBitmap.height
+      };
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          localStorage.setItem(REMEMBERED_LOGO_KEY, reader.result);
+          setRememberedLogoStatus('Your last logo is remembered automatically in this browser.');
+        } catch (e) {
+          console.error(e);
+        }
+      };
+      reader.readAsDataURL(f);
+
+      setStatus('Logo loaded & saved.', true);
+      schedulePreviewRender('logo loaded');
+    } catch (e) {
+      console.error(e);
+      logo = null;
+      setStatus('Failed to load logo.');
+    }
+  });
+function onControlInput() {
+    updateBadges();
+    schedulePreviewRender('settings');
+  }
+
+  [opacityEl, scaleEl, positionEl, marginEl, previewCapEl, batchSizeEl, frameEnabledEl, frameColorEl, frameSidesEl, frameImageScaleEl].forEach(el => {
+    el.addEventListener('input', onControlInput);
+    el.addEventListener('change', onControlInput);
+  });
+
+  // Text overlay controls
+  const textOverlayEnabledEl = document.getElementById('textOverlayEnabled');
+  const textOverlayOptionsEl = document.getElementById('textOverlayOptions');
+
+  function updateTextRowVisibility() {
+    const show = textOverlayEnabledEl.checked;
+    textOverlayOptionsEl.style.display = show ? 'block' : 'none';
+    document.querySelectorAll('.text-overlay-row').forEach(el => {
+      el.style.display = show ? 'flex' : 'none';
+    });
+  }
+
+  textOverlayEnabledEl.addEventListener('change', () => {
+    updateTextRowVisibility();
+    schedulePreviewRender('text overlay toggle');
+  });
+
+  document.getElementById('addTextOverlay').addEventListener('click', () => addTextOverlay());
+
+  // Initialise with one overlay
+  addTextOverlay();
+
+  [formatEl, qualityEl].forEach(el => {
+    el.addEventListener('input', updateBadges);
+    el.addEventListener('change', updateBadges);
+  });
+
+  refreshBtn.addEventListener('click', () => schedulePreviewRender('manual refresh'));
+
+  clearAllBtn.addEventListener('click', () => {
+    for (const p of photos) { try { p.bitmap.close?.(); } catch {} }
+    if (logo?.bitmap) { try { logo.bitmap.close?.(); } catch {} }
+
+    photos.length = 0;
+    logo = null;
+    logoInput.value = '';
+    listEl.innerHTML = '';
+    updateCount();
+setStatus('Cleared.', true);
+  });
+
+  downloadAllBtn.addEventListener('click', async () => {
+    if (photos.length === 0) return;
+    if (!window.JSZip) {
+      setStatus('JSZip failed to load (check your internet connection).');
+      return;
+    }
+
+    try {
+      setStatus('Building ZIP (full resolution)…');
+      const zip = new JSZip();
+      const ext = outputExt(formatEl.value);
+
+      for (let i = 0; i < photos.length; i++) {
+        const p = photos[i];
+        setStatus(`Exporting ${i+1}/${photos.length}…`);
+        const blob = await exportFullResBlob(p);
+        const arrayBuf = await blob.arrayBuffer();
+        const filename = `${safeBaseName(p.name)}_watermarked.${ext}`;
+        zip.file(filename, arrayBuf);
+        await new Promise(requestAnimationFrame);
+      }
+
+      setStatus('Compressing ZIP…');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `watermarked_images.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus('ZIP downloaded.', true);
+    } catch (e) {
+      console.error(e);
+      setStatus('ZIP download failed. See console for details.');
+    }
+  });
+
+  updateBadges();
+  updateCount();
+  loadRememberedLogo();
+  document.getElementById('navToggle').addEventListener('click', function() {
+    document.getElementById('headerNav').classList.toggle('open');
+  });
+  document.addEventListener('click', function(e) {
+    const nav = document.getElementById('headerNav');
+    if (nav.classList.contains('open') && !nav.contains(e.target) && !document.getElementById('navToggle').contains(e.target)) {
+      nav.classList.remove('open');
+    }
+  });
+  document.addEventListener('langchange', updateCount);
+</script>
+</body>
+</html>

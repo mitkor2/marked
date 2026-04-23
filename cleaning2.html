@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cleaning Tool 2 – Advanced Watermark Removal</title>
+  <link rel="icon" type="image/png" href="icon-cabernet.png">
+  <script src="lang.js"></script>
+  <style>
+    :root { color-scheme:light; --bg:#f8f4ec; --surface:#fffaf3; --surface-2:#f3ede3; --header:#f7f3ec; --text:#221815; --muted:#8d96a3; --border:#e4dbcf; --accent:#7d1026; --accent-2:#5f0b1c; --shadow:rgba(69,38,26,0.08); }
+    body { font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; margin:0; background:var(--bg); color:var(--text); }
+    header { background:var(--header); border-bottom:1px solid var(--border); box-shadow:0 2px 10px var(--shadow); }
+    .header-inner { max-width:1100px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    .header-inner h1 { margin:0; font-size:18px; font-weight:700; color:var(--accent); display:flex; align-items:center; gap:10px; }
+    .hamburger { display:none; background:none; border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:20px; cursor:pointer; color:var(--accent); line-height:1; box-shadow:none; }
+    .header-nav { display:flex; gap:2px; align-items:center; }
+    .nav-link { padding:8px 12px; font-size:13px; font-weight:600; color:var(--muted); text-decoration:none; border-bottom:3px solid transparent; display:inline-block; white-space:nowrap; }
+    .nav-link:hover { color:var(--accent); }
+    .nav-link.active { color:var(--accent); border-bottom-color:var(--accent); }
+    @media (max-width:760px) {
+      .hamburger { display:inline-block; }
+      .header-nav { display:none; flex-direction:column; align-items:stretch; width:100%; padding:6px 0; border-top:1px solid var(--border); margin-top:6px; }
+      .header-nav.open { display:flex; }
+      .nav-link { border-bottom:none; border-radius:8px; padding:10px 12px; }
+      .nav-link.active { background:#f0e5d8; }
+    }
+    main { padding:18px 20px; max-width:1200px; margin:0 auto; }
+    .grid { display:grid; grid-template-columns:300px 1fr; gap:16px; align-items:start; }
+    @media (max-width:900px) { .grid { grid-template-columns:1fr; } }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:14px; box-shadow:0 8px 24px var(--shadow); }
+    .card h2 { margin:0 0 10px; font-size:14px; color:var(--accent); }
+    .hint { font-size:11px; color:#7e756d; margin-top:6px; line-height:1.35; }
+    .drop { border:2px dashed #d8c9b7; background:var(--surface-2); border-radius:14px; padding:22px 14px; text-align:center; cursor:pointer; user-select:none; transition:border-color .15s,background .15s; }
+    .drop.dragover { border-color:var(--accent); background:#f0e5d8; }
+    .drop strong { display:block; font-size:13px; color:var(--accent); }
+    .drop span { display:block; font-size:11px; color:#756d66; margin-top:4px; }
+    label { display:block; font-size:11px; color:var(--text); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+    .slider-row { display:flex; align-items:center; gap:10px; }
+    .slider-row input[type="range"] { flex:1; }
+    .slider-row .val { font-size:12px; font-weight:600; color:var(--accent); min-width:32px; text-align:right; }
+    input[type="range"] { width:100%; accent-color:var(--accent); }
+    .sep { height:1px; background:var(--border); margin:12px 0; }
+    .btnbar { display:flex; gap:8px; flex-wrap:wrap; }
+    button { border:1px solid var(--accent); background:var(--accent); color:#fff; padding:9px 14px; border-radius:12px; font-size:12px; cursor:pointer; font-family:inherit; box-shadow:0 4px 14px rgba(125,16,38,0.12); white-space:nowrap; }
+    button:hover { background:var(--accent-2); }
+    button.secondary { background:#fff; color:var(--accent); border-color:var(--border); box-shadow:none; }
+    button.secondary:hover { background:var(--surface-2); border-color:var(--accent); }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .canvas-wrap { position:relative; background:#e5e0d8; border-radius:14px; overflow:hidden; min-height:400px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); }
+    .canvas-wrap.empty { background:var(--surface-2); }
+    .canvas-wrap canvas { display:block; max-width:100%; }
+    #maskCanvas { position:absolute; top:0; left:0; cursor:crosshair; }
+    .progress-bar { height:4px; background:var(--border); border-radius:2px; overflow:hidden; margin-top:8px; display:none; }
+    .progress-bar .fill { height:100%; background:var(--accent); width:0%; transition:width .2s; }
+    #statusMsg { font-size:11px; color:var(--muted); margin-top:6px; min-height:16px; }
+    .mode-toggle { display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .mode-toggle button { border:none; box-shadow:none; border-radius:0; padding:7px 12px; font-size:11px; background:#fff; color:var(--muted); flex:1; }
+    .mode-toggle button.active { background:var(--accent); color:#fff; }
+    .mode-toggle button:hover:not(.active) { background:var(--surface-2); color:var(--text); }
+    .toolbar { display:flex; gap:6px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+    .toolbar button { padding:6px 10px; font-size:11px; }
+    footer { padding:14px 20px; color:#7e756d; font-size:12px; text-align:center; border-top:1px solid var(--border); background:var(--header); margin-top:18px; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <h1><a href="index.html" style="display:inline-flex;align-items:center"><img src="icon-logotype-cabernet.png" style="height:28px;"></a></h1>
+    <button class="hamburger" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <nav class="header-nav" id="headerNav">
+      <a href="index.html" class="nav-link" data-i18n="nav.watermark">Watermark Tool</a>
+      <a href="collage.html" class="nav-link" data-i18n="nav.collage">Collage</a>
+      <a href="email-campaigns.html" class="nav-link" data-i18n="nav.email">Email Campaigns</a>
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="bg">BG</button>
+      </div>
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="grid">
+    <!-- LEFT PANEL -->
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <h2>Upload Images</h2>
+        <div class="drop" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+          <strong>Drop images here</strong>
+          <span>or click to browse (multiple supported)</span>
+        </div>
+        <div id="batchList" style="margin-top:8px;display:none">
+          <label>Images</label>
+          <div id="batchThumbs" style="display:flex;gap:6px;flex-wrap:wrap;max-height:140px;overflow-y:auto"></div>
+        </div>
+        <p class="hint">Supports JPG, PNG, WebP. Multiple images for batch processing.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <h2>Brush Settings</h2>
+        <label>Mode</label>
+        <div class="mode-toggle" style="margin-bottom:10px">
+          <button class="active" id="modeBrush">Paint Mask</button>
+          <button id="modeErase">Eraser</button>
+        </div>
+        <label>Brush Size</label>
+        <div class="slider-row">
+          <input type="range" id="brushSize" min="3" max="120" value="30">
+          <span class="val" id="brushSizeVal">30</span>
+        </div>
+        <div style="margin-top:8px">
+          <label>Mask Opacity</label>
+          <div class="slider-row">
+            <input type="range" id="maskOpacity" min="10" max="90" value="50">
+            <span class="val" id="maskOpacityVal">50%</span>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <label>Removal Method</label>
+        <div class="mode-toggle" style="margin-bottom:10px">
+          <button class="active" id="methodAuto">Auto (Semi-transparent)</button>
+          <button id="methodInpaint">Inpaint (Opaque)</button>
+        </div>
+        <div id="autoOptions">
+          <label>Watermark Strength (α)</label>
+          <div class="slider-row">
+            <input type="range" id="wmStrength" min="5" max="95" value="40">
+            <span class="val" id="wmStrengthVal">40%</span>
+          </div>
+          <p class="hint">How opaque is the watermark? Higher = stronger/more opaque logo. Try 30-50% for typical semi-transparent logos.</p>
+        </div>
+        <div id="inpaintOptions" style="display:none">
+          <label>Inpainting Radius</label>
+          <div class="slider-row">
+            <input type="range" id="inpaintRadius" min="3" max="30" value="10">
+            <span class="val" id="inpaintRadiusVal">10</span>
+          </div>
+          <p class="hint">Larger radius = smoother fill but slower. Use for fully opaque watermarks.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <h2>Actions</h2>
+        <div class="btnbar">
+          <button id="btnRemove" disabled>Remove Watermark</button>
+          <button id="btnUndo" class="secondary" disabled>Undo</button>
+        </div>
+        <div class="btnbar" style="margin-top:8px">
+          <button id="btnClearMask" class="secondary" disabled>Clear Mask</button>
+          <button id="btnDownload" class="secondary" disabled>Download</button>
+        </div>
+        <div class="btnbar" style="margin-top:8px">
+          <button id="btnBatchAll" class="secondary" disabled>Batch: Apply to All</button>
+          <button id="btnDownloadAll" class="secondary" disabled>Download All</button>
+        </div>
+        <div class="progress-bar" id="progressBar"><div class="fill" id="progressFill"></div></div>
+        <div id="statusMsg"></div>
+      </div>
+
+      <div class="card">
+        <h2>Quality</h2>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-weight:400;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="chkEdgeSmooth" checked> Edge smoothing
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;text-transform:none;font-weight:400;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="chkMultiscale" checked> Multi-scale (faster for large images)
+          </label>
+        </div>
+        <p class="hint">Auto mode mathematically reverses semi-transparent overlays — no guessing. Inpaint mode reconstructs pixels for fully opaque logos.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Canvas -->
+    <div class="card" style="padding:8px">
+      <div class="toolbar">
+        <button class="secondary" id="btnZoomIn">+ Zoom</button>
+        <button class="secondary" id="btnZoomOut">- Zoom</button>
+        <button class="secondary" id="btnFit">Fit</button>
+        <button class="secondary" id="btnToggleMask">Hide Mask</button>
+        <button class="secondary" id="btnCompare">Compare</button>
+      </div>
+      <div class="canvas-wrap empty" id="canvasWrap">
+        <!-- canvasInner is the transform target; maskCanvas overlays imgCanvas via position:absolute -->
+        <div id="canvasInner" style="position:relative;display:inline-block;transform-origin:0 0">
+          <canvas id="imgCanvas" style="display:block"></canvas>
+          <canvas id="maskCanvas" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
+        </div>
+        <div id="emptyMsg" style="color:var(--muted);font-size:13px;">Upload an image to begin</div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>
+  &copy; 2026
+  <a href="https://www.urbanestate.bg/home" target="_blank">Urban Estate</a>
+  <span data-i18n="footer.and">and</span>
+  <a href="https://www.pepapetrovaadvisory.com" target="_blank">Pepa Petrova Advisory</a>.
+  <span data-i18n="footer.rights">All rights reserved.</span>
+</footer>
+
+<script>
+// ── Navigation toggle ─────────────────────────────────────────
+document.getElementById('navToggle').addEventListener('click', () => {
+  document.getElementById('headerNav').classList.toggle('open');
+});
+
+// ── State ─────────────────────────────────────────────────────
+let originalImg = null;       // HTMLImageElement of the uploaded photo
+let imgData = null;           // current ImageData on imgCanvas (mutated by inpaint)
+let origData = null;          // original ImageData (for undo / compare)
+let maskData = null;          // Uint8Array, 1 = masked, 0 = clear
+let imgW = 0, imgH = 0;
+let zoom = 1;
+let panX = 0, panY = 0;
+let painting = false;
+let erasing = false;
+let maskVisible = true;
+let comparing = false;
+let history = [];             // undo stack of ImageData snapshots
+
+// Batch state
+let batchImages = [];         // [{name, img, resultData}]
+let batchIdx = -1;            // currently active image in batch
+
+const imgCanvas  = document.getElementById('imgCanvas');
+const maskCanvas = document.getElementById('maskCanvas');
+const imgCtx     = imgCanvas.getContext('2d', { willReadFrequently: true });
+const maskCtx    = maskCanvas.getContext('2d');
+const wrap       = document.getElementById('canvasWrap');
+
+// ── File upload ───────────────────────────────────────────────
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  if (files.length) loadFiles(files);
+});
+fileInput.addEventListener('change', () => {
+  const files = [...fileInput.files].filter(f => f.type.startsWith('image/'));
+  if (files.length) loadFiles(files);
+});
+
+function loadFiles(files) {
+  batchImages = [];
+  batchIdx = -1;
+  let loaded = 0;
+  files.forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        batchImages[i] = { name: file.name, img, resultData: null };
+        loaded++;
+        if (loaded === files.length) {
+          renderBatchThumbs();
+          selectBatchImage(0);
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderBatchThumbs() {
+  const container = document.getElementById('batchThumbs');
+  const list = document.getElementById('batchList');
+  container.innerHTML = '';
+  if (batchImages.length <= 1) { list.style.display = 'none'; return; }
+  list.style.display = 'block';
+  batchImages.forEach((b, i) => {
+    const thumb = document.createElement('div');
+    thumb.style.cssText = 'width:48px;height:48px;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid ' + (i === batchIdx ? 'var(--accent)' : 'var(--border)') + ';flex-shrink:0;position:relative';
+    thumb.innerHTML = `<img src="${b.img.src}" style="width:100%;height:100%;object-fit:cover">`;
+    if (b.resultData) {
+      const dot = document.createElement('div');
+      dot.style.cssText = 'position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:#4caf50';
+      thumb.appendChild(dot);
+    }
+    thumb.addEventListener('click', () => selectBatchImage(i));
+    container.appendChild(thumb);
+  });
+  document.getElementById('btnBatchAll').disabled = false;
+}
+
+function selectBatchImage(idx) {
+  // Save current result if any
+  if (batchIdx >= 0 && batchIdx < batchImages.length && imgData) {
+    batchImages[batchIdx].resultData = new ImageData(new Uint8ClampedArray(imgData.data), imgW, imgH);
+  }
+  batchIdx = idx;
+  const b = batchImages[idx];
+  initImage(b.img, b.resultData);
+  renderBatchThumbs();
+}
+
+function initImage(img, existingResult) {
+  originalImg = img;
+  imgW = img.naturalWidth;
+  imgH = img.naturalHeight;
+
+  imgCanvas.width = imgW;
+  imgCanvas.height = imgH;
+  maskCanvas.width = imgW;
+  maskCanvas.height = imgH;
+
+  imgCtx.drawImage(img, 0, 0);
+  origData = imgCtx.getImageData(0, 0, imgW, imgH);
+
+  if (existingResult) {
+    imgData = existingResult;
+    imgCtx.putImageData(imgData, 0, 0);
+  } else {
+    imgData = imgCtx.getImageData(0, 0, imgW, imgH);
+  }
+
+  maskData = new Uint8Array(imgW * imgH);
+  history  = [];
+
+  fitToView();
+  clearMaskOverlay();
+  wrap.classList.remove('empty');
+  document.getElementById('emptyMsg').style.display = 'none';
+
+  document.getElementById('btnRemove').disabled    = false;
+  document.getElementById('btnClearMask').disabled  = false;
+  document.getElementById('btnUndo').disabled = true;
+  setStatus('Image loaded (' + imgW + 'x' + imgH + '). Paint over the watermark, then click "Remove Watermark".');
+}
+
+// ── Zoom & fit ────────────────────────────────────────────────
+function fitToView() {
+  const wrapW = wrap.clientWidth - 16;
+  const wrapH = wrap.clientHeight - 16;
+  zoom = Math.min(wrapW / imgW, wrapH / imgH, 1);
+  panX = 0; panY = 0;
+  applyTransform();
+}
+
+function applyTransform() {
+  // Scale the shared inner wrapper so both canvases move together —
+  // this keeps them perfectly aligned at every zoom level.
+  const inner = document.getElementById('canvasInner');
+  inner.style.transform = `scale(${zoom})`;
+}
+
+document.getElementById('btnZoomIn').addEventListener('click', () => { zoom = Math.min(zoom * 1.25, 5); applyTransform(); });
+document.getElementById('btnZoomOut').addEventListener('click', () => { zoom = Math.max(zoom / 1.25, 0.1); applyTransform(); });
+document.getElementById('btnFit').addEventListener('click', fitToView);
+
+// ── Brush controls ────────────────────────────────────────────
+const brushSizeEl   = document.getElementById('brushSize');
+const brushSizeVal  = document.getElementById('brushSizeVal');
+const maskOpacityEl = document.getElementById('maskOpacity');
+const maskOpacityVal= document.getElementById('maskOpacityVal');
+
+brushSizeEl.addEventListener('input', () => { brushSizeVal.textContent = brushSizeEl.value; });
+maskOpacityEl.addEventListener('input', () => { maskOpacityVal.textContent = maskOpacityEl.value + '%'; redrawMask(); });
+const inpaintRadEl  = document.getElementById('inpaintRadius');
+const inpaintRadVal = document.getElementById('inpaintRadiusVal');
+inpaintRadEl.addEventListener('input', () => { inpaintRadVal.textContent = inpaintRadEl.value; });
+const wmStrengthEl  = document.getElementById('wmStrength');
+const wmStrengthVal = document.getElementById('wmStrengthVal');
+wmStrengthEl.addEventListener('input', () => { wmStrengthVal.textContent = wmStrengthEl.value + '%'; });
+
+// Method toggle
+document.getElementById('methodAuto').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('methodInpaint').classList.remove('active');
+  document.getElementById('autoOptions').style.display = '';
+  document.getElementById('inpaintOptions').style.display = 'none';
+});
+document.getElementById('methodInpaint').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('methodAuto').classList.remove('active');
+  document.getElementById('autoOptions').style.display = 'none';
+  document.getElementById('inpaintOptions').style.display = '';
+});
+
+document.getElementById('modeBrush').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('modeErase').classList.remove('active');
+});
+document.getElementById('modeErase').addEventListener('click', function() {
+  this.classList.add('active');
+  document.getElementById('modeBrush').classList.remove('active');
+});
+
+// ── Mask painting on canvas ───────────────────────────────────
+maskCanvas.addEventListener('pointerdown', e => {
+  if (!maskData) return;
+  painting = true;
+  erasing = document.getElementById('modeErase').classList.contains('active');
+  maskCanvas.setPointerCapture(e.pointerId);
+  paintAt(e);
+});
+maskCanvas.addEventListener('pointermove', e => { if (painting) paintAt(e); });
+maskCanvas.addEventListener('pointerup', () => { painting = false; });
+maskCanvas.addEventListener('pointercancel', () => { painting = false; });
+
+// Scroll to zoom
+wrap.addEventListener('wheel', e => {
+  if (!imgData) return;
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  zoom = Math.max(0.1, Math.min(5, zoom * factor));
+  applyTransform();
+}, { passive: false });
+
+function paintAt(e) {
+  // Use imgCanvas rect (the scaled rendered size) to map screen→canvas coords.
+  // rect.width = imgW * zoom, so dividing (clientX - rect.left) by (rect.width/imgW)
+  // gives the exact canvas pixel under the cursor regardless of zoom level.
+  const rect = imgCanvas.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) / (rect.width  / imgW);
+  const cy = (e.clientY - rect.top)  / (rect.height / imgH);
+  const r = parseInt(brushSizeEl.value);
+  const val = erasing ? 0 : 1;
+
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      if (dx * dx + dy * dy > r * r) continue;
+      const px = Math.round(cx + dx);
+      const py = Math.round(cy + dy);
+      if (px < 0 || px >= imgW || py < 0 || py >= imgH) continue;
+      maskData[py * imgW + px] = val;
+    }
+  }
+  redrawMask();
+}
+
+function redrawMask() {
+  if (!maskData) return;
+  maskCtx.clearRect(0, 0, imgW, imgH);
+  if (!maskVisible) return;
+  const alpha = parseInt(maskOpacityEl.value) / 100;
+  const overlay = maskCtx.createImageData(imgW, imgH);
+  const d = overlay.data;
+  for (let i = 0; i < maskData.length; i++) {
+    if (maskData[i]) {
+      const j = i * 4;
+      d[j]   = 255;   // R
+      d[j+1] = 40;    // G
+      d[j+2] = 40;    // B
+      d[j+3] = Math.round(alpha * 255);
+    }
+  }
+  maskCtx.putImageData(overlay, 0, 0);
+}
+
+function clearMaskOverlay() {
+  if (maskData) maskData.fill(0);
+  maskCtx.clearRect(0, 0, imgW, imgH);
+}
+
+// ── Toggle / compare ──────────────────────────────────────────
+document.getElementById('btnToggleMask').addEventListener('click', function() {
+  maskVisible = !maskVisible;
+  this.textContent = maskVisible ? 'Hide Mask' : 'Show Mask';
+  redrawMask();
+});
+
+document.getElementById('btnCompare').addEventListener('mousedown', function() {
+  if (!origData) return;
+  comparing = true;
+  imgCtx.putImageData(origData, 0, 0);
+});
+document.getElementById('btnCompare').addEventListener('mouseup', function() {
+  if (!imgData) return;
+  comparing = false;
+  imgCtx.putImageData(imgData, 0, 0);
+});
+document.getElementById('btnCompare').addEventListener('mouseleave', function() {
+  if (comparing && imgData) { comparing = false; imgCtx.putImageData(imgData, 0, 0); }
+});
+
+// ── Clear mask ────────────────────────────────────────────────
+document.getElementById('btnClearMask').addEventListener('click', () => {
+  clearMaskOverlay();
+  setStatus('Mask cleared.');
+});
+
+// ── Undo ──────────────────────────────────────────────────────
+document.getElementById('btnUndo').addEventListener('click', () => {
+  if (!history.length) return;
+  imgData = history.pop();
+  imgCtx.putImageData(imgData, 0, 0);
+  document.getElementById('btnUndo').disabled = history.length === 0;
+  setStatus('Undone.');
+});
+
+// ── Download ──────────────────────────────────────────────────
+document.getElementById('btnDownload').addEventListener('click', () => {
+  if (!imgData) return;
+  const tmp = document.createElement('canvas');
+  tmp.width = imgW; tmp.height = imgH;
+  tmp.getContext('2d').putImageData(imgData, 0, 0);
+  const a = document.createElement('a');
+  a.download = 'cleaned.png';
+  a.href = tmp.toDataURL('image/png');
+  a.click();
+});
+
+// ── Status / progress ─────────────────────────────────────────
+function setStatus(msg) { document.getElementById('statusMsg').textContent = msg; }
+function showProgress(show) { document.getElementById('progressBar').style.display = show ? 'block' : 'none'; }
+function setProgress(pct) { document.getElementById('progressFill').style.width = pct + '%'; }
+
+// ═══════════════════════════════════════════════════════════════
+// INPAINTING ENGINE — Fast Marching Method (Telea-style)
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById('btnRemove').addEventListener('click', startInpaint);
+
+async function startInpaint() {
+  if (!imgData || !maskData) return;
+
+  const maskedCount = maskData.reduce((s, v) => s + v, 0);
+  if (maskedCount === 0) { setStatus('No mask painted. Brush over the watermark first.'); return; }
+
+  // Save current state for undo
+  history.push(new ImageData(new Uint8ClampedArray(imgData.data), imgW, imgH));
+  document.getElementById('btnUndo').disabled = false;
+  document.getElementById('btnRemove').disabled = true;
+
+  const useEdgeSmooth = document.getElementById('chkEdgeSmooth').checked;
+  const useMultiscale = document.getElementById('chkMultiscale').checked;
+  const methodAuto = document.getElementById('methodAuto').classList.contains('active');
+
+  showProgress(true);
+  setProgress(0);
+
+  if (methodAuto) {
+    // ── Alpha-reversal: mathematically undo the semi-transparent overlay ──
+    const alpha = parseInt(wmStrengthEl.value) / 100;
+    setStatus('Reversing watermark overlay...');
+    await removeTransparentWatermark(imgData.data, maskData, imgW, imgH, alpha, pct => setProgress(pct));
+    if (useEdgeSmooth) {
+      setStatus('Smoothing edges...');
+      edgeSmooth(imgData.data, maskData, imgW, imgH, 4);
+    }
+  } else {
+    // ── FMM inpainting: for opaque watermarks ──
+    const radius = parseInt(inpaintRadEl.value);
+    if (useMultiscale && imgW > 800 && imgH > 800) {
+      await inpaintMultiscale(imgData.data, maskData, imgW, imgH, radius, useEdgeSmooth);
+    } else {
+      setStatus('Running inpainting...');
+      await inpaintFMM(imgData.data, maskData, imgW, imgH, radius, pct => setProgress(pct));
+      if (useEdgeSmooth) {
+        setStatus('Smoothing edges...');
+        edgeSmooth(imgData.data, maskData, imgW, imgH, 3);
+      }
+    }
+  }
+
+  imgCtx.putImageData(imgData, 0, 0);
+  clearMaskOverlay();
+
+  showProgress(false);
+  document.getElementById('btnRemove').disabled = false;
+  document.getElementById('btnDownload').disabled = false;
+  if (batchImages.length > 1 && batchIdx >= 0) {
+    batchImages[batchIdx].resultData = new ImageData(new Uint8ClampedArray(imgData.data), imgW, imgH);
+    renderBatchThumbs();
+    document.getElementById('btnDownloadAll').disabled = false;
+  }
+  setStatus('Watermark removed. You can paint over remaining artifacts and run again.');
+}
+
+/**
+ * Multi-scale inpainting: process at 1/4 resolution first, then use as
+ * guide for full-resolution pass. Much faster for large images and
+ * produces better results for wide mask regions.
+ */
+async function inpaintMultiscale(pixels, mask, w, h, radius, doEdgeSmooth) {
+  setStatus('Multi-scale pass 1/2: low-resolution inpaint...');
+  showProgress(true);
+  setProgress(0);
+
+  // ── Scale 1: quarter resolution ──
+  const scale = 0.25;
+  const sw = Math.round(w * scale);
+  const sh = Math.round(h * scale);
+
+  // Downscale image
+  const smallPixels = downscalePixels(pixels, w, h, sw, sh);
+  // Downscale mask (any masked pixel in source block → masked in small)
+  const smallMask = downscaleMask(mask, w, h, sw, sh);
+
+  // Inpaint at small scale with proportionally smaller radius
+  const smallRadius = Math.max(3, Math.round(radius * scale));
+  await inpaintFMM(smallPixels, smallMask, sw, sh, smallRadius, pct => setProgress(pct * 0.4));
+
+  // Upscale the inpainted result back to full resolution
+  const guidePixels = upscalePixels(smallPixels, sw, sh, w, h);
+
+  // ── Scale 2: full resolution with guide ──
+  setStatus('Multi-scale pass 2/2: full-resolution refinement...');
+  setProgress(40);
+
+  // Blend guide into masked area as initial estimate so FMM has better starting values
+  for (let i = 0; i < w * h; i++) {
+    if (mask[i]) {
+      const pi = i * 4;
+      pixels[pi]     = guidePixels[pi];
+      pixels[pi + 1] = guidePixels[pi + 1];
+      pixels[pi + 2] = guidePixels[pi + 2];
+    }
+  }
+
+  // Run FMM at full resolution — with the guide pre-filled, boundary pixels
+  // already have reasonable neighbours so convergence is much faster
+  await inpaintFMM(pixels, mask, w, h, radius, pct => setProgress(40 + pct * 0.55));
+
+  if (doEdgeSmooth) {
+    setStatus('Smoothing edges...');
+    edgeSmooth(pixels, mask, w, h, 3);
+  }
+
+  setProgress(100);
+}
+
+function downscalePixels(src, sw, sh, dw, dh) {
+  const dst = new Uint8ClampedArray(dw * dh * 4);
+  const xr = sw / dw, yr = sh / dh;
+  for (let y = 0; y < dh; y++) {
+    for (let x = 0; x < dw; x++) {
+      const sx = Math.min(Math.floor(x * xr), sw - 1);
+      const sy = Math.min(Math.floor(y * yr), sh - 1);
+      const si = (sy * sw + sx) * 4;
+      const di = (y * dw + x) * 4;
+      dst[di] = src[si]; dst[di+1] = src[si+1]; dst[di+2] = src[si+2]; dst[di+3] = 255;
+    }
+  }
+  return dst;
+}
+
+function downscaleMask(src, sw, sh, dw, dh) {
+  const dst = new Uint8Array(dw * dh);
+  const xr = sw / dw, yr = sh / dh;
+  for (let y = 0; y < dh; y++) {
+    for (let x = 0; x < dw; x++) {
+      const sx = Math.min(Math.floor(x * xr), sw - 1);
+      const sy = Math.min(Math.floor(y * yr), sh - 1);
+      dst[y * dw + x] = src[sy * sw + sx];
+    }
+  }
+  return dst;
+}
+
+function upscalePixels(src, sw, sh, dw, dh) {
+  // Bilinear interpolation
+  const dst = new Uint8ClampedArray(dw * dh * 4);
+  const xr = (sw - 1) / (dw - 1 || 1);
+  const yr = (sh - 1) / (dh - 1 || 1);
+  for (let y = 0; y < dh; y++) {
+    const sy = y * yr;
+    const sy0 = Math.floor(sy), sy1 = Math.min(sy0 + 1, sh - 1);
+    const fy = sy - sy0;
+    for (let x = 0; x < dw; x++) {
+      const sx = x * xr;
+      const sx0 = Math.floor(sx), sx1 = Math.min(sx0 + 1, sw - 1);
+      const fx = sx - sx0;
+      const di = (y * dw + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        const v00 = src[(sy0 * sw + sx0) * 4 + c];
+        const v10 = src[(sy0 * sw + sx1) * 4 + c];
+        const v01 = src[(sy1 * sw + sx0) * 4 + c];
+        const v11 = src[(sy1 * sw + sx1) * 4 + c];
+        dst[di + c] = Math.round(v00 * (1 - fx) * (1 - fy) + v10 * fx * (1 - fy) + v01 * (1 - fx) * fy + v11 * fx * fy);
+      }
+      dst[di + 3] = 255;
+    }
+  }
+  return dst;
+}
+
+/**
+ * Edge smoothing: Gaussian blur along the boundary of the mask to reduce
+ * visible seam artifacts between inpainted and original pixels.
+ */
+function edgeSmooth(pixels, mask, w, h, passes) {
+  // Build a border band: pixels within 3px of the mask edge
+  const band = new Uint8Array(w * h);
+  const bandWidth = 3;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!mask[i]) continue;
+      // Check if near a non-masked pixel
+      let nearEdge = false;
+      for (let dy = -bandWidth; dy <= bandWidth && !nearEdge; dy++) {
+        for (let dx = -bandWidth; dx <= bandWidth && !nearEdge; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          if (!mask[ny * w + nx]) nearEdge = true;
+        }
+      }
+      if (nearEdge) band[i] = 1;
+    }
+  }
+
+  // Apply Gaussian-like blur to band pixels only
+  const kernel = [1, 2, 1, 2, 4, 2, 1, 2, 1];
+  const ksum = 16;
+  const tmp = new Uint8ClampedArray(pixels.length);
+  for (let p = 0; p < passes; p++) {
+    tmp.set(pixels);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        if (!band[y * w + x]) continue;
+        let r = 0, g = 0, b = 0, ki = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const pi = ((y + dy) * w + (x + dx)) * 4;
+            const kw = kernel[ki++];
+            r += tmp[pi] * kw;
+            g += tmp[pi + 1] * kw;
+            b += tmp[pi + 2] * kw;
+          }
+        }
+        const pi = (y * w + x) * 4;
+        pixels[pi] = Math.round(r / ksum);
+        pixels[pi + 1] = Math.round(g / ksum);
+        pixels[pi + 2] = Math.round(b / ksum);
+      }
+    }
+  }
+}
+
+// ── Batch processing ──────────────────────────────────────────
+document.getElementById('btnBatchAll').addEventListener('click', async () => {
+  if (batchImages.length < 2 || !maskData) return;
+  const maskedCount = maskData.reduce((s, v) => s + v, 0);
+  if (maskedCount === 0) { setStatus('Paint a mask on the current image first. It will be applied to all images.'); return; }
+
+  // Save the mask from the current image
+  const savedMask = new Uint8Array(maskData);
+  const savedW = imgW, savedH = imgH;
+  const radius = parseInt(inpaintRadEl.value);
+  const useMultiscale = document.getElementById('chkMultiscale').checked;
+  const useEdgeSmooth = document.getElementById('chkEdgeSmooth').checked;
+
+  document.getElementById('btnBatchAll').disabled = true;
+
+  for (let i = 0; i < batchImages.length; i++) {
+    const b = batchImages[i];
+    setStatus(`Batch: processing image ${i + 1}/${batchImages.length} (${b.name})...`);
+
+    // Create a temporary canvas to get this image's pixel data
+    const tmpC = document.createElement('canvas');
+    tmpC.width = b.img.naturalWidth;
+    tmpC.height = b.img.naturalHeight;
+    const tmpCtx = tmpC.getContext('2d');
+    tmpCtx.drawImage(b.img, 0, 0);
+    const tmpData = tmpCtx.getImageData(0, 0, tmpC.width, tmpC.height);
+
+    // Scale the mask if image dimensions differ
+    let useMask = savedMask;
+    if (tmpC.width !== savedW || tmpC.height !== savedH) {
+      useMask = downscaleMask(savedMask, savedW, savedH, tmpC.width, tmpC.height);
+    }
+
+    showProgress(true);
+    if (useMultiscale && tmpC.width > 800 && tmpC.height > 800) {
+      await inpaintMultiscale(tmpData.data, useMask, tmpC.width, tmpC.height, radius, useEdgeSmooth);
+    } else {
+      await inpaintFMM(tmpData.data, useMask, tmpC.width, tmpC.height, radius, pct => setProgress(pct));
+      if (useEdgeSmooth) edgeSmooth(tmpData.data, useMask, tmpC.width, tmpC.height, 3);
+    }
+
+    b.resultData = tmpData;
+  }
+
+  // Reload the current image to show its result
+  selectBatchImage(batchIdx);
+  showProgress(false);
+  document.getElementById('btnBatchAll').disabled = false;
+  document.getElementById('btnDownloadAll').disabled = false;
+  setStatus(`Batch complete: ${batchImages.length} images processed.`);
+});
+
+// ── Download All (batch) ──────────────────────────────────────
+document.getElementById('btnDownloadAll').addEventListener('click', () => {
+  batchImages.forEach(b => {
+    if (!b.resultData) return;
+    const tmpC = document.createElement('canvas');
+    tmpC.width = b.resultData.width;
+    tmpC.height = b.resultData.height;
+    tmpC.getContext('2d').putImageData(b.resultData, 0, 0);
+    const a = document.createElement('a');
+    const base = b.name.replace(/\.[^.]+$/, '');
+    a.download = base + '_cleaned.png';
+    a.href = tmpC.toDataURL('image/png');
+    a.click();
+  });
+});
+
+/**
+ * Semi-transparent watermark reversal.
+ *
+ * A semi-transparent white watermark blends: V = O*(1-α) + W*α
+ * where V=visible, O=original, W=watermark colour (255 for white), α=opacity.
+ * Solving for O: O = (V - W*α) / (1-α)
+ *
+ * We also sample nearby unmasked pixels to estimate local reference colour,
+ * and blend the reversal result with that reference using a confidence weight
+ * — this prevents over-bright/dark artefacts when α is slightly off.
+ */
+async function removeTransparentWatermark(pixels, mask, w, h, alpha, onProgress) {
+  const sampleR = 40; // radius to gather reference pixels from unmasked area
+  const invAlpha = 1 - alpha;
+
+  let done = 0;
+  const total = mask.reduce((s, v) => s + v, 0);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!mask[i]) continue;
+
+      const pi = i * 4;
+
+      // Estimate the underlying colour by sampling known (unmasked) pixels nearby.
+      // This gives us the local average to use as a fallback and confidence blend.
+      let sumR = 0, sumG = 0, sumB = 0, cnt = 0;
+      const sr = Math.min(sampleR, Math.max(w, h));
+      const step = Math.max(1, Math.round(sr / 8)); // sparse sampling for speed
+      for (let dy = -sr; dy <= sr; dy += step) {
+        for (let dx = -sr; dx <= sr; dx += step) {
+          if (dx * dx + dy * dy > sr * sr) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          const ni = ny * w + nx;
+          if (mask[ni]) continue; // skip other masked pixels
+          const np = ni * 4;
+          sumR += pixels[np];
+          sumG += pixels[np + 1];
+          sumB += pixels[np + 2];
+          cnt++;
+        }
+      }
+
+      // Apply reversal formula: original = (visible - watermark*alpha) / (1-alpha)
+      // Watermark colour is assumed white (255) — works for most logos/text
+      const revR = (pixels[pi]     - 255 * alpha) / invAlpha;
+      const revG = (pixels[pi + 1] - 255 * alpha) / invAlpha;
+      const revB = (pixels[pi + 2] - 255 * alpha) / invAlpha;
+
+      if (cnt > 0) {
+        // Blend reversal with local reference.
+        // If reversal gives reasonable values (0-255), trust it more.
+        // Otherwise fall back toward the reference.
+        const refR = sumR / cnt, refG = sumG / cnt, refB = sumB / cnt;
+        const conf = Math.min(1, Math.max(0, 1 - Math.max(
+          Math.abs(revR - refR),
+          Math.abs(revG - refG),
+          Math.abs(revB - refB)
+        ) / 128));
+        const blend = 0.5 + conf * 0.4; // range 0.5–0.9 towards reversal
+        pixels[pi]     = Math.round(Math.max(0, Math.min(255, revR * blend + refR * (1 - blend))));
+        pixels[pi + 1] = Math.round(Math.max(0, Math.min(255, revG * blend + refG * (1 - blend))));
+        pixels[pi + 2] = Math.round(Math.max(0, Math.min(255, revB * blend + refB * (1 - blend))));
+      } else {
+        pixels[pi]     = Math.round(Math.max(0, Math.min(255, revR)));
+        pixels[pi + 1] = Math.round(Math.max(0, Math.min(255, revG)));
+        pixels[pi + 2] = Math.round(Math.max(0, Math.min(255, revB)));
+      }
+
+      done++;
+      const pct = Math.round(done / total * 100);
+      if (pct % 5 === 0 && done % 200 === 0) {
+        onProgress(pct);
+        await sleep(0);
+      }
+    }
+  }
+  onProgress(100);
+}
+
+/**
+ * Fast Marching Method inpainting (Telea 2004).
+ *
+ * Algorithm:
+ * 1. Build a narrow-band priority queue of pixels at the mask boundary
+ * 2. Process pixels in order of distance from the boundary (closest first)
+ * 3. For each pixel, estimate its value from nearby known pixels using
+ *    weights based on distance, direction, and geometric level-set info
+ * 4. Mark pixel as known and add its masked neighbours to the queue
+ *
+ * This produces smooth, natural-looking fills that propagate texture from
+ * the mask boundary inward.
+ */
+async function inpaintFMM(pixels, mask, w, h, radius, onProgress) {
+  const KNOWN = 0, BAND = 1, INSIDE = 2;
+  const INF = 1e10;
+  const n = w * h;
+
+  // State arrays
+  const flag = new Uint8Array(n);      // KNOWN / BAND / INSIDE
+  const dist = new Float32Array(n);    // distance from boundary
+
+  // Initialise: known = outside mask, inside = mask
+  for (let i = 0; i < n; i++) {
+    if (mask[i]) {
+      flag[i] = INSIDE;
+      dist[i] = INF;
+    } else {
+      flag[i] = KNOWN;
+      dist[i] = 0;
+    }
+  }
+
+  // Binary min-heap for the narrow band (priority = distance)
+  const heap = [];
+  function heapPush(idx, d) {
+    dist[idx] = d;
+    heap.push(idx);
+    let i = heap.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if (dist[heap[parent]] <= dist[heap[i]]) break;
+      const t = heap[parent]; heap[parent] = heap[i]; heap[i] = t;
+      i = parent;
+    }
+  }
+  function heapPop() {
+    const top = heap[0];
+    const last = heap.pop();
+    if (heap.length > 0) {
+      heap[0] = last;
+      let i = 0;
+      while (true) {
+        let small = i;
+        const l = 2 * i + 1, r = 2 * i + 2;
+        if (l < heap.length && dist[heap[l]] < dist[heap[small]]) small = l;
+        if (r < heap.length && dist[heap[r]] < dist[heap[small]]) small = r;
+        if (small === i) break;
+        const t = heap[small]; heap[small] = heap[i]; heap[i] = t;
+        i = small;
+      }
+    }
+    return top;
+  }
+
+  // Find boundary pixels (INSIDE pixels adjacent to KNOWN)
+  const dx4 = [-1, 1, 0, 0];
+  const dy4 = [0, 0, -1, 1];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (flag[i] !== INSIDE) continue;
+      for (let d = 0; d < 4; d++) {
+        const nx = x + dx4[d], ny = y + dy4[d];
+        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+        if (flag[ny * w + nx] === KNOWN) {
+          flag[i] = BAND;
+          heapPush(i, 1.0);
+          break;
+        }
+      }
+    }
+  }
+
+  // Process narrow band
+  let processed = 0;
+  const totalToProcess = mask.reduce((s, v) => s + v, 0);
+  let lastPct = 0;
+
+  while (heap.length > 0) {
+    const idx = heapPop();
+    flag[idx] = KNOWN;
+    const ix = idx % w;
+    const iy = (idx - ix) / w;
+
+    // Inpaint this pixel
+    inpaintPixel(pixels, flag, dist, w, h, ix, iy, radius);
+
+    processed++;
+    const pct = Math.round(processed / totalToProcess * 100);
+    if (pct !== lastPct) {
+      lastPct = pct;
+      onProgress(pct);
+      // Yield to UI thread every 2% so progress bar updates
+      if (pct % 2 === 0) await sleep(0);
+    }
+
+    // Update neighbours
+    for (let d = 0; d < 4; d++) {
+      const nx = ix + dx4[d], ny = iy + dy4[d];
+      if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+      const ni = ny * w + nx;
+      if (flag[ni] !== INSIDE) continue;
+
+      // Compute new distance using the eikonal equation
+      const newDist = solveEikonal(dist, flag, w, h, nx, ny);
+      flag[ni] = BAND;
+      heapPush(ni, newDist);
+    }
+  }
+
+  onProgress(100);
+}
+
+/**
+ * Solve the eikonal equation |grad(T)| = 1 at (x,y) using known neighbours.
+ */
+function solveEikonal(dist, flag, w, h, x, y) {
+  // Get minimal horizontal and vertical distances from known neighbours
+  let dh = 1e10, dv = 1e10;
+  if (x > 0 && flag[y * w + x - 1] !== 2) dh = Math.min(dh, dist[y * w + x - 1]);
+  if (x < w - 1 && flag[y * w + x + 1] !== 2) dh = Math.min(dh, dist[y * w + x + 1]);
+  if (y > 0 && flag[(y - 1) * w + x] !== 2) dv = Math.min(dv, dist[(y - 1) * w + x]);
+  if (y < h - 1 && flag[(y + 1) * w + x] !== 2) dv = Math.min(dv, dist[(y + 1) * w + x]);
+
+  if (dh === 1e10) return dv + 1;
+  if (dv === 1e10) return dh + 1;
+
+  const diff = Math.abs(dh - dv);
+  if (diff >= 1) return Math.min(dh, dv) + 1;
+  return (dh + dv + Math.sqrt(2 - diff * diff)) / 2;
+}
+
+/**
+ * Inpaint a single pixel at (x,y) using weighted average of known pixels
+ * within the given radius. Weights incorporate:
+ *   - Distance from the pixel being painted
+ *   - Direction (how well the known pixel is aligned with the gradient)
+ *   - Level set factor (geometric smoothness)
+ */
+function inpaintPixel(pixels, flag, dist, w, h, x, y, radius) {
+  let sumR = 0, sumG = 0, sumB = 0, sumW = 0;
+
+  // Gradient of the distance function at (x,y) for directional weighting
+  let gradX = 0, gradY = 0;
+  if (x > 0 && x < w - 1) gradX = (dist[y * w + x + 1] - dist[y * w + x - 1]) * 0.5;
+  if (y > 0 && y < h - 1) gradY = (dist[(y + 1) * w + x] - dist[(y - 1) * w + x]) * 0.5;
+  const gradLen = Math.sqrt(gradX * gradX + gradY * gradY) || 1;
+  gradX /= gradLen;
+  gradY /= gradLen;
+
+  const r2 = radius * radius;
+
+  for (let dy = -radius; dy <= radius; dy++) {
+    const ny = y + dy;
+    if (ny < 0 || ny >= h) continue;
+    for (let dx = -radius; dx <= radius; dx++) {
+      const nx = x + dx;
+      if (nx < 0 || nx >= w) continue;
+
+      const d2 = dx * dx + dy * dy;
+      if (d2 === 0 || d2 > r2) continue;
+
+      const ni = ny * w + nx;
+      if (flag[ni] !== 0) continue; // only use KNOWN pixels
+
+      const dd = Math.sqrt(d2);
+
+      // Direction weight: favour pixels along the gradient direction
+      const dirW = Math.abs(dx * gradX + dy * gradY) / dd;
+
+      // Distance weight: closer pixels matter more
+      const distW = 1.0 / (dd * dd);
+
+      // Level-set weight: favour pixels at similar distance from boundary
+      const levelW = 1.0 / (1.0 + Math.abs(dist[ni] - dist[y * w + x]));
+
+      const weight = distW * (1.0 + dirW) * levelW;
+
+      const pi = ni * 4;
+      sumR += pixels[pi]     * weight;
+      sumG += pixels[pi + 1] * weight;
+      sumB += pixels[pi + 2] * weight;
+      sumW += weight;
+    }
+  }
+
+  const pi = (y * w + x) * 4;
+  if (sumW > 0) {
+    pixels[pi]     = Math.round(sumR / sumW);
+    pixels[pi + 1] = Math.round(sumG / sumW);
+    pixels[pi + 2] = Math.round(sumB / sumW);
+    // Alpha stays 255
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+</script>
+</body>
+</html>

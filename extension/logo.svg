@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Urban Estate arrow/geometric logo mark -->
+  <!-- Dark burgundy color matching #7d1026 / accent #7d1026 -->
+  <rect width="512" height="512" fill="white"/>
+  <!-- Top-left block with arrow cutout -->
+  <polygon points="0,0 200,0 200,200 0,200" fill="#7d1026"/>
+  <polygon points="0,0 0,260 130,130" fill="white"/>
+  <!-- Top-right block -->
+  <polygon points="200,0 512,0 512,312 312,312 312,200 200,200" fill="#7d1026"/>
+  <polygon points="312,200 512,0 512,200" fill="white"/>
+  <!-- Bottom-left block -->
+  <polygon points="0,200 200,200 200,312 312,312 312,512 0,512" fill="#7d1026"/>
+  <!-- Bottom-right triangle -->
+  <polygon points="312,312 312,512 512,512" fill="#7d1026"/>
+</svg>

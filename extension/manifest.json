@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Urban Estate — RealPost Pro",
+  "description": "Post real estate listings to multiple Facebook groups — by Urban Estate",
+  "version": "1.0",
+  "permissions": ["tabs", "scripting", "cookies"],
+  "host_permissions": ["https://www.facebook.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon-cabernet.png",
+    "48": "icon-cabernet.png",
+    "128": "icon-cabernet.png"
+  },
+  "action": {
+    "default_title": "Urban Estate — RealPost Pro",
+    "default_icon": {
+      "16": "icon-cabernet.png",
+      "48": "icon-cabernet.png",
+      "128": "icon-cabernet.png"
+    }
+  }
+}

@@ -1,0 +1,1370 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GIF Maker</title>
+  <link rel="icon" type="image/png" href="icon-cabernet.png">
+  <script src="lang.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8f4ec;
+      --surface: #fffaf3;
+      --surface-2: #f3ede3;
+      --header: #f7f3ec;
+      --text: #221815;
+      --muted: #8d96a3;
+      --border: #e4dbcf;
+      --accent: #7d1026;
+      --accent-2: #5f0b1c;
+      --accent-soft: #efe2cf;
+      --shadow: rgba(69,38,26,.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+    /* ── Header ── */
+    header { background: var(--header); border-bottom: 1px solid var(--border); box-shadow: 0 2px 10px var(--shadow); }
+    .header-inner { max-width: 1200px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .header-inner h1 { margin: 0; display: flex; align-items: center; }
+    .hamburger { display: none; background: none; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 20px; cursor: pointer; color: var(--accent); line-height: 1; }
+    .header-nav { display: flex; gap: 2px; align-items: center; }
+    .nav-link { padding: 8px 12px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; display: inline-block; white-space: nowrap; }
+    .nav-link:hover { color: var(--accent); }
+    .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); }
+    @media (max-width: 760px) {
+      .hamburger { display: inline-block; }
+      .header-nav { display: none; flex-direction: column; align-items: stretch; width: 100%; padding: 6px 0; border-top: 1px solid var(--border); margin-top: 6px; }
+      .header-nav.open { display: flex; }
+      .nav-link { border-bottom: none; border-radius: 8px; padding: 10px 12px; }
+      .nav-link.active { background: #f0e5d8; }
+    }
+
+    /* ── Layout ── */
+    main { padding: 18px 20px; max-width: 1200px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) {
+      main { padding: 10px 10px; }
+      .card { padding: 12px; border-radius: 14px; }
+      .card + .card { margin-top: 10px; }
+      .card h2 { font-size: 13px; }
+      .drop { padding: 16px 12px; }
+      .drop .drop-sub { display: none; }
+      .drop .drop-sub-mobile { display: block; }
+      .frame-item { min-height: 44px; padding: 8px 8px; gap: 6px; }
+      .frame-delay-row input { width: 50px; font-size: 11px; }
+      .frame-num { display: none; }
+      #generateBtn { font-size: 13px; padding: 11px; }
+    }
+
+    /* ── Card ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 16px; box-shadow: 0 8px 24px var(--shadow); }
+    .card + .card { margin-top: 14px; }
+    .card h2 { margin: 0 0 12px; font-size: 14px; font-weight: 700; color: var(--accent); }
+
+    label { display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+    .hint { font-size: 12px; color: #7e756d; margin-top: 5px; line-height: 1.4; }
+
+    input[type="number"], input[type="text"], select {
+      width: 100%; border: 1px solid var(--border); border-radius: 10px;
+      padding: 8px 10px; font-size: 13px; background: #fff; color: var(--text); font-family: inherit;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(125,16,38,.1); }
+    input[type="color"] { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); padding: 2px; cursor: pointer; background: #fff; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+    /* ── Drop zone ── */
+    .drop {
+      border: 2px dashed #d8c9b7; border-radius: 14px;
+      background: var(--surface-2); padding: 20px;
+      text-align: center; cursor: pointer; user-select: none;
+      transition: border-color .15s, background .15s;
+    }
+    .drop:hover, .drop.dragover { border-color: var(--accent); background: #f0e5d8; }
+    .drop strong { display: block; font-size: 13px; color: var(--accent); }
+    .drop .drop-sub { display: block; font-size: 12px; color: #756d66; margin-top: 4px; }
+    .drop .drop-sub-mobile { display: none; font-size: 12px; color: #756d66; margin-top: 4px; }
+
+    /* ── Buttons ── */
+    button {
+      border: 1px solid var(--accent); background: var(--accent); color: #fff;
+      padding: 9px 14px; border-radius: 12px; font-size: 13px; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(125,16,38,.15); font-family: inherit; font-weight: 600;
+    }
+    button:hover { background: var(--accent-2); border-color: var(--accent-2); }
+    button:active { transform: scale(.97); }
+    button:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    button.secondary { background: #fff; color: var(--accent); border-color: var(--border); box-shadow: none; }
+    button.secondary:hover { border-color: var(--accent); background: #fdf5f5; }
+    button.danger { background: #fff; color: #8c2436; border-color: #e7c6cb; box-shadow: none; }
+    button.danger:hover { background: #fde8e8; border-color: #8c2436; }
+
+    /* ── Row helpers ── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .flex-row { display: flex; gap: 8px; align-items: center; min-width: 0; }
+    .flex-row > * { flex-shrink: 0; }
+    .flex-row > input[type="range"] { flex: 1; min-width: 0; width: 0; }
+    .flex-row > input[type="number"] { flex: 1; min-width: 0; }
+
+    /* ── Frame list ── */
+    #frameList {
+      display: flex; flex-direction: column; gap: 7px;
+      max-height: 420px; overflow-y: auto;
+      padding-right: 4px;
+    }
+    @media (max-width: 1000px) { #frameList { max-height: none; } }
+    #frameList:empty::after {
+      content: 'No frames yet — upload images above.';
+      display: block; text-align: center; padding: 20px 0;
+      color: var(--muted); font-size: 12px;
+    }
+    .frame-item {
+      display: flex; align-items: center; gap: 8px;
+      background: #fffdf9; border: 1px solid var(--border);
+      border-radius: 12px; padding: 8px 10px;
+      cursor: grab; transition: box-shadow .15s, opacity .15s;
+      user-select: none; min-height: 48px;
+    }
+    .frame-item.dragging { opacity: .4; box-shadow: 0 0 0 2px var(--accent); }
+    .frame-item.drag-over { box-shadow: 0 0 0 2px var(--accent); background: #f0e5d8; }
+    .frame-thumb {
+      width: 54px; height: 40px; border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--border); background: #f6f0e6; flex-shrink: 0;
+    }
+    .frame-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .frame-meta { flex: 1; min-width: 0; }
+    .frame-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .frame-delay-row { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+    .frame-delay-row label { font-size: 11px; color: var(--muted); margin: 0; font-weight: 500; white-space: nowrap; }
+    .frame-delay-row input { width: 58px; padding: 4px 6px; font-size: 12px; border-radius: 7px; }
+    .frame-drag-handle { font-size: 16px; color: #c4b8aa; cursor: grab; padding: 2px 4px; line-height: 1; flex-shrink: 0; }
+    @media (max-width: 600px) { .frame-drag-handle { display: none; } }
+    .frame-move-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .frame-move-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 1px 6px; font-size: 12px; box-shadow: none; border-radius: 5px; line-height: 1.4; min-height: 0; }
+    .frame-move-btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+    .frame-move-btn:disabled { opacity: .3; cursor: not-allowed; transform: none; }
+    .frame-remove { background: none; border: none; color: var(--muted); font-size: 15px; padding: 4px 6px; box-shadow: none; border-radius: 6px; cursor: pointer; line-height: 1; flex-shrink: 0; }
+    .frame-remove:hover { color: #8c2436; background: #fde8e8; }
+    .frame-num { font-size: 10px; color: var(--muted); width: 16px; text-align: right; flex-shrink: 0; }
+
+    /* ── Toggle switch ── */
+    .toggle-row { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+    .toggle-row input[type="checkbox"] { width: 38px; height: 22px; appearance: none; -webkit-appearance: none; background: #d8c9b7; border-radius: 999px; position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0; border: none; box-shadow: none; padding: 0; }
+    .toggle-row input[type="checkbox"]::after { content: ''; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: left .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .toggle-row input[type="checkbox"]:checked { background: var(--accent); }
+    .toggle-row input[type="checkbox"]:checked::after { left: 19px; }
+    .border-options { transition: opacity .2s; }
+    .border-options.disabled { opacity: .4; pointer-events: none; }
+    .wm-options.disabled, .txt-options.disabled { opacity: .4; pointer-events: none; }
+    .frame-txt-toggle { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; font-size: 11px; font-weight: 700; cursor: pointer; line-height: 1.4; box-shadow: none; }
+    .frame-txt-toggle.on { border-color: var(--accent); color: var(--accent); }
+    .frame-txt-toggle.off { color: var(--muted); text-decoration: line-through; }
+    .color-row { display: flex; align-items: center; gap: 8px; }
+
+    /* ── Color row ── */
+    .color-row { display: flex; align-items: center; gap: 10px; }
+    .color-row label { margin: 0; white-space: nowrap; }
+
+    /* ── Preview ── */
+    #previewWrap {
+      min-height: 160px; border-radius: 14px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; margin-bottom: 12px; position: relative;
+    }
+    #previewWrap.checker { background-image: repeating-conic-gradient(#e8e2d8 0% 25%, #f3ede3 0% 50%); background-size: 20px 20px; }
+    #previewImg { max-width: 100%; max-height: 360px; display: block; border-radius: 10px; }
+    #previewEmpty { font-size: 13px; color: var(--muted); text-align: center; padding: 20px; }
+
+    /* ── Progress ── */
+    #progressWrap { display: none; margin-bottom: 12px; }
+    .bar-bg { background: var(--surface-2); border-radius: 999px; height: 8px; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0; background: var(--accent); border-radius: 999px; transition: width .2s; }
+    #progressLabel { font-size: 12px; color: var(--muted); margin-top: 5px; text-align: center; }
+
+    /* ── Generate button ── */
+    #generateBtn { width: 100%; padding: 12px; font-size: 14px; font-weight: 700; border-radius: 14px; }
+
+    /* ── Download strip ── */
+    #downloadStrip { display: none; margin-top: 10px; align-items: center; gap: 10px; flex-wrap: wrap; }
+    #downloadStrip a { flex: 1; }
+    #downloadStrip a button { width: 100%; }
+    #gifSize { font-size: 12px; color: var(--muted); }
+
+    /* ── Footer ── */
+    footer { padding: 14px 20px; color: #7e756d; font-size: 12px; text-align: center; border-top: 1px solid var(--border); background: var(--header); margin-top: 20px; }
+    footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Pill value ── */
+    .pill { font-size: 12px; color: var(--accent); background: #fff; border: 1px solid var(--border); padding: 4px 9px; border-radius: 999px; min-width: 44px; text-align: center; flex-shrink: 0; }
+
+    /* ── Section divider ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+    /* ── Badge ── */
+    .badge { display: inline-block; font-size: 10px; font-weight: 700; background: var(--accent); color: #fff; border-radius: 999px; padding: 2px 7px; margin-left: 6px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1><img src="icon-logotype-cabernet.png" style="height:28px;" alt="Urban Estate"></h1>
+    <button class="hamburger" id="navToggle" aria-label="Toggle navigation">&#9776;</button>
+    <nav class="header-nav" id="headerNav">
+      <a href="index.html" class="nav-link" data-i18n="nav.watermark">Watermark Tool</a>
+      <a href="collage.html" class="nav-link" data-i18n="nav.collage">Collage</a>
+      <a href="gif-maker.html" class="nav-link active" data-i18n="nav.gif">GIF Maker</a>
+      <a href="email-campaigns.html" class="nav-link" data-i18n="nav.email">Email Campaigns</a>
+      <div class="lang-switcher">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="bg">BG</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="grid">
+
+  <!-- ════ LEFT COLUMN — Upload + Frames ════ -->
+  <div>
+
+    <div class="card">
+      <h2 data-i18n="g.step1">1) Upload Images</h2>
+      <div class="drop" id="dropZone">
+        <strong data-i18n="g.dropStrong">Drag &amp; drop images here</strong>
+        <span class="drop-sub" data-i18n="g.dropSub">or click to select — JPG, PNG, WebP, GIF</span>
+        <span class="drop-sub-mobile" data-i18n="g.dropSubMobile">Tap to select images</span>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap">
+        <span id="frameCountLabel" style="font-size:12px;color:var(--muted)">0 frames</span>
+        <div style="display:flex;gap:6px">
+          <button class="secondary" id="sortBtn" style="font-size:12px;padding:6px 10px" title="Sort alphabetically">A→Z</button>
+          <button class="secondary" id="reverseBtn" style="font-size:12px;padding:6px 10px" title="Reverse order" data-i18n="g.reverse">↕ Reverse</button>
+          <button class="danger" id="clearBtn" style="font-size:12px;padding:6px 10px" data-i18n="g.clearAll">Clear All</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2><span data-i18n="g.step2">2) Frames</span> <span id="frameBadge" class="badge" style="display:none">0</span></h2>
+      <div id="frameList"></div>
+    </div>
+
+  </div>
+
+  <!-- ════ RIGHT COLUMN — Settings + Preview ════ -->
+  <div>
+
+    <!-- Settings -->
+    <div class="card">
+      <h2 data-i18n="g.settings">3) GIF Settings</h2>
+
+      <!-- Frame delay -->
+      <div>
+        <label data-i18n="g.delay">Default frame delay (seconds)</label>
+        <div class="flex-row">
+          <input type="range" id="globalDelay" min="0.1" max="10" step="0.1" value="4.0">
+          <span class="pill" id="globalDelayVal">4.0s</span>
+        </div>
+        <p class="hint" data-i18n="g.delayHint">This applies to all frames. You can also override per-frame in the list above.</p>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Loop -->
+      <div>
+        <label data-i18n="g.loop">Loop</label>
+        <div class="row2">
+          <select id="loopSelect">
+            <option value="0">Infinite loop</option>
+            <option value="1">Play once</option>
+            <option value="2">Play twice</option>
+            <option value="3">Play 3×</option>
+            <option value="-1">Custom…</option>
+          </select>
+          <input type="number" id="loopCustom" min="1" max="999" value="5" placeholder="N times" style="display:none">
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Output size -->
+      <div>
+        <label data-i18n="g.outputSize">Output size</label>
+        <select id="sizePreset">
+          <option value="ig_story">Instagram Story / Reels (1080×1920)</option>
+          <option value="ig_square">Instagram Post – Square (1080×1080)</option>
+          <option value="ig_portrait">Instagram Post – Portrait (1080×1350)</option>
+          <option value="ig_landscape">Instagram Post – Landscape (1080×566)</option>
+          <option value="fb_post">Facebook Post (1200×630)</option>
+          <option value="fb_story">Facebook Story (1080×1920)</option>
+          <option value="tw_post">Twitter / X Post (1200×675)</option>
+          <option value="yt_thumb">YouTube Thumbnail (1280×720)</option>
+          <option value="match_first" selected data-i18n-opt="g.matchFirst">Match first frame</option>
+          <option value="custom" data-i18n-opt="g.custom">Custom dimensions…</option>
+        </select>
+        <div class="row2" id="customSizeRow" style="display:none;margin-top:8px">
+          <div>
+            <label data-i18n="g.widthPx">Width (px)</label>
+            <input type="number" id="outWidth" value="1080" min="16" max="4096">
+          </div>
+          <div>
+            <label data-i18n="g.heightPx">Height (px)</label>
+            <input type="number" id="outHeight" value="1080" min="16" max="4096">
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Optimize -->
+      <div>
+        <label class="toggle-row" style="font-size:13px;margin-bottom:6px">
+          <input type="checkbox" id="optimizeEnabled" checked>
+          <span data-i18n="g.optimize">Optimize file size</span>
+        </label>
+        <div id="optimizeRow">
+          <p class="hint" style="margin-bottom:8px" data-i18n="g.optimizeHint">Scales images down and reduces colour palette. Turn off for original resolution and best quality.</p>
+          <div class="flex-row">
+            <input type="range" id="maxDim" min="200" max="2000" step="50" value="800">
+            <span class="pill" id="maxDimVal">800px</span>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Quality -->
+      <div id="qualitySection">
+        <label data-i18n="g.quality">Colour quality <span style="font-weight:400;color:#7e756d">(higher = better, slower)</span></label>
+        <div class="flex-row">
+          <input type="range" id="qualitySlider" min="1" max="10" step="1" value="8">
+          <span class="pill" id="qualityVal">8</span>
+        </div>
+        <p class="hint" data-i18n="g.qualityHint">Controls colour precision. 10 = best quality, 1 = fastest encode.</p>
+      </div>
+
+    </div>
+
+    <!-- Border settings -->
+    <div class="card">
+      <h2 data-i18n="g.border">4) Border / Padding</h2>
+
+      <label class="toggle-row">
+        <input type="checkbox" id="borderEnabled">
+        <span data-i18n="g.addBorder">Add border / padding</span>
+      </label>
+
+      <div class="border-options disabled" id="borderOptions">
+        <div>
+          <label data-i18n="g.borderWidth">Border width <span style="font-weight:400;color:#7e756d">(px)</span></label>
+          <div class="flex-row">
+            <input type="range" id="borderWidth" min="2" max="80" step="2" value="20">
+            <span class="pill" id="borderWidthVal">20px</span>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <label data-i18n="g.borderSides">Border sides</label>
+          <select id="borderSides">
+            <option value="all">All sides</option>
+            <option value="tb">Top &amp; Bottom only</option>
+            <option value="lr">Left &amp; Right only</option>
+            <option value="t">Top only</option>
+            <option value="b">Bottom only</option>
+            <option value="l">Left only</option>
+            <option value="r">Right only</option>
+          </select>
+        </div>
+        <div style="margin-top:10px">
+          <div class="color-row">
+            <label data-i18n="g.borderColor">Border colour</label>
+            <input type="color" id="borderColor" value="#ffffff">
+            <span style="font-size:12px;color:#7e756d" id="borderColorHex">#ffffff</span>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <label data-i18n="g.objectFit">Object fit</label>
+        <select id="objectFit">
+          <option value="cover">Cover (fill, crop)</option>
+          <option value="contain">Contain (letterbox)</option>
+          <option value="stretch">Stretch</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Logo Watermark -->
+    <div class="card">
+      <h2 data-i18n="g.wmTitle">5) Logo Watermark</h2>
+
+      <label class="toggle-row">
+        <input type="checkbox" id="wmEnabled">
+        <span data-i18n="g.wmEnable">Add logo watermark</span>
+      </label>
+
+      <div class="wm-options disabled" id="wmOptions" style="margin-top:10px">
+        <div>
+          <label data-i18n="w.chooseLogo">Choose logo (PNG recommended)</label>
+          <input type="file" id="wmLogoInput" accept="image/*" style="width:100%;box-sizing:border-box;font-size:12px">
+          <div id="wmLogoName" class="hint" style="display:none"></div>
+          <div id="wmRememberedStatus" class="hint" data-i18n="w.logoRemembered">Your last logo is remembered automatically in this browser.</div>
+        </div>
+        <div class="row2" style="margin-top:10px">
+          <div>
+            <label data-i18n="w.opacity">Opacity</label>
+            <div class="flex-row">
+              <input type="range" id="wmOpacity" min="0" max="1" step="0.01" value="0.35">
+              <span class="pill" id="wmOpacityVal">0.35</span>
+            </div>
+          </div>
+          <div>
+            <label data-i18n="w.size">Size (% of width)</label>
+            <div class="flex-row">
+              <input type="range" id="wmSize" min="5" max="60" step="1" value="20">
+              <span class="pill" id="wmSizeVal">20%</span>
+            </div>
+          </div>
+        </div>
+        <div class="row2" style="margin-top:10px">
+          <div>
+            <label data-i18n="w.position">Position</label>
+            <select id="wmPosition">
+              <option value="br" data-i18n="pos.br">Bottom-right</option>
+              <option value="bl" data-i18n="pos.bl">Bottom-left</option>
+              <option value="tr" data-i18n="pos.tr">Top-right</option>
+              <option value="tl" data-i18n="pos.tl">Top-left</option>
+              <option value="c" selected data-i18n="pos.c">Center</option>
+            </select>
+          </div>
+          <div>
+            <label data-i18n="w.margin">Margin (px)</label>
+            <input type="number" id="wmMargin" min="0" value="24">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text Overlay -->
+    <div class="card">
+      <h2 data-i18n="g.txtTitle">6) Text Overlay</h2>
+
+      <label class="toggle-row">
+        <input type="checkbox" id="txtEnabled">
+        <span data-i18n="g.txtEnable">Add text overlay</span>
+      </label>
+      <p class="hint" style="margin-top:6px" data-i18n="g.txtPerFrameHint">Use the T button on each frame above to show/hide text on that frame.</p>
+
+      <div class="txt-options disabled" id="txtOptions" style="margin-top:10px">
+        <div id="txtOverlayList"></div>
+        <button id="addTxtBtn" class="secondary" style="font-size:12px;padding:6px 12px;margin-top:4px" data-i18n="g.addTxt">+ Add text</button>
+      </div>
+    </div>
+
+    <!-- Preview + Generate -->
+    <div class="card">
+      <h2 data-i18n="g.export">7) Preview &amp; Export</h2>
+
+      <div id="previewWrap" class="checker">
+        <span id="previewEmpty" style="font-size:13px;color:var(--muted)" data-i18n="g.previewEmpty">Preview will appear here after generating.</span>
+        <img id="previewImg" style="display:none">
+      </div>
+
+      <div id="progressWrap">
+        <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
+        <div id="progressLabel">Preparing…</div>
+      </div>
+
+      <button id="generateBtn" data-i18n="g.generate">&#9654; Generate GIF</button>
+
+      <div id="downloadStrip">
+        <a id="downloadLink" download="urban_est_prty.gif">
+          <button data-i18n="g.download">&#11015; Download GIF</button>
+        </a>
+        <button id="downloadMp4Btn" class="secondary" data-i18n="g.downloadMp4">&#11015; Download Video</button>
+        <span id="gifSize"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</main>
+
+<footer>
+  &copy; 2026
+  <a href="https://www.urbanestate.bg/home" target="_blank">Urban Estate</a>
+  <span data-i18n="footer.and">and</span>
+  <a href="https://www.pepapetrovaadvisory.com" target="_blank">Pepa Petrova Advisory</a>.
+  <span data-i18n="footer.rights">All rights reserved.</span>
+</footer>
+
+<!-- gif.js loaded from CDN; worker is re-fetched as a blob to bypass CORS -->
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────────────────
+const frames = [];   // { img, name, delay (ms) }
+let gifWorkerUrl = null;
+let dragSrcIndex = null;   // module-level so all frame items share it
+
+// ── Preload gif.js worker as a blob URL ───────────────────
+(async () => {
+  try {
+    const res  = await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js');
+    const text = await res.text();
+    const blob = new Blob([text], { type: 'application/javascript' });
+    gifWorkerUrl = URL.createObjectURL(blob);
+  } catch (e) {
+    console.warn('Could not preload GIF worker:', e);
+  }
+})();
+
+// ── Hamburger ─────────────────────────────────────────────
+document.getElementById('navToggle').addEventListener('click', () => {
+  document.getElementById('headerNav').classList.toggle('open');
+});
+document.addEventListener('click', function(e) {
+  const nav = document.getElementById('headerNav');
+  if (nav.classList.contains('open') && !nav.contains(e.target) && !document.getElementById('navToggle').contains(e.target)) {
+    nav.classList.remove('open');
+  }
+});
+
+// ── Drop zone ─────────────────────────────────────────────
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  addFiles([...e.dataTransfer.files]);
+});
+fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+
+function addFiles(files) {
+  const imageFiles = files.filter(f => f.type.startsWith('image/'));
+  if (!imageFiles.length) return;
+  const globalDelayMs = Math.round(parseFloat(document.getElementById('globalDelay').value) * 1000) || 4000;
+  let loaded = 0;
+  imageFiles.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        frames.push({ img, name: file.name, delay: globalDelayMs, showText: true });
+        loaded++;
+        if (loaded === imageFiles.length) renderFrameList();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Frame list render ─────────────────────────────────────
+function renderFrameList() {
+  const list = document.getElementById('frameList');
+  list.innerHTML = '';
+  document.getElementById('frameCountLabel').textContent = frames.length + ' frame' + (frames.length !== 1 ? 's' : '');
+  const badge = document.getElementById('frameBadge');
+  badge.textContent = frames.length;
+  badge.style.display = frames.length ? 'inline-block' : 'none';
+
+  frames.forEach((f, i) => {
+    const item = document.createElement('div');
+    item.className = 'frame-item';
+    item.dataset.index = i;
+    item.draggable = true;
+
+    // Thumbnail
+    const thumb = document.createElement('div');
+    thumb.className = 'frame-thumb';
+    const tImg = document.createElement('img');
+    tImg.src = f.img.src;
+    thumb.appendChild(tImg);
+
+    // Drag handle
+    const handle = document.createElement('span');
+    handle.className = 'frame-drag-handle';
+    handle.innerHTML = '&#8597;';
+    handle.title = 'Drag to reorder';
+
+    // Frame number
+    const num = document.createElement('span');
+    num.className = 'frame-num';
+    num.textContent = i + 1;
+
+    // Meta
+    const meta = document.createElement('div');
+    meta.className = 'frame-meta';
+    const name = document.createElement('div');
+    name.className = 'frame-name';
+    name.textContent = f.name;
+    name.title = f.name;
+
+    const delayRow = document.createElement('div');
+    delayRow.className = 'frame-delay-row';
+    const delayLabel = document.createElement('label');
+    delayLabel.textContent = 'Delay:';
+    const delayInput = document.createElement('input');
+    delayInput.type = 'number';
+    delayInput.min = '0.05';
+    delayInput.max = '30';
+    delayInput.step = '0.05';
+    delayInput.value = (f.delay / 1000).toFixed(2);
+    delayInput.addEventListener('change', () => {
+      frames[i].delay = Math.max(50, Math.round(parseFloat(delayInput.value) * 1000));
+    });
+    const delayUnit = document.createElement('span');
+    delayUnit.style.cssText = 'font-size:11px;color:var(--muted)';
+    delayUnit.textContent = 's';
+    delayRow.append(delayLabel, delayInput, delayUnit);
+    meta.append(name, delayRow);
+
+    // Remove button
+    const rm = document.createElement('button');
+    rm.className = 'frame-remove';
+    rm.innerHTML = '&#10005;';
+    rm.title = 'Remove frame';
+    rm.addEventListener('click', () => { frames.splice(i, 1); renderFrameList(); });
+
+    // ↑↓ move buttons (work on all devices)
+    const moveBtns = document.createElement('div');
+    moveBtns.className = 'frame-move-btns';
+    const upBtn = document.createElement('button');
+    upBtn.className = 'frame-move-btn';
+    upBtn.innerHTML = '↑';
+    upBtn.title = 'Move up';
+    upBtn.disabled = i === 0;
+    upBtn.addEventListener('click', () => {
+      if (i === 0) return;
+      [frames[i - 1], frames[i]] = [frames[i], frames[i - 1]];
+      renderFrameList();
+    });
+    const downBtn = document.createElement('button');
+    downBtn.className = 'frame-move-btn';
+    downBtn.innerHTML = '↓';
+    downBtn.title = 'Move down';
+    downBtn.disabled = i === frames.length - 1;
+    downBtn.addEventListener('click', () => {
+      if (i === frames.length - 1) return;
+      [frames[i], frames[i + 1]] = [frames[i + 1], frames[i]];
+      renderFrameList();
+    });
+    moveBtns.append(upBtn, downBtn);
+
+    // Per-frame text toggle
+    const textToggle = document.createElement('button');
+    textToggle.className = 'frame-txt-toggle ' + (f.showText !== false ? 'on' : 'off');
+    textToggle.textContent = 'T';
+    textToggle.title = f.showText !== false ? 'Text ON — click to hide on this frame' : 'Text OFF — click to show';
+    textToggle.addEventListener('click', () => {
+      frames[i].showText = frames[i].showText === false;
+      renderFrameList();
+    });
+
+    item.append(handle, num, thumb, meta, textToggle, moveBtns, rm);
+
+    // Drag-to-reorder (desktop) — uses shared dragSrcIndex
+    item.addEventListener('dragstart', e => {
+      dragSrcIndex = i;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => { item.classList.remove('dragging'); dragSrcIndex = null; });
+    item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('drag-over'); });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      if (dragSrcIndex === null || dragSrcIndex === i) return;
+      const moved = frames.splice(dragSrcIndex, 1)[0];
+      frames.splice(i, 0, moved);
+      renderFrameList();
+    });
+
+    list.appendChild(item);
+  });
+}
+
+// ── Clear / Sort / Reverse ────────────────────────────────
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (!frames.length || confirm('Remove all frames?')) { frames.length = 0; renderFrameList(); resetPreview(); }
+});
+document.getElementById('sortBtn').addEventListener('click', () => {
+  frames.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  renderFrameList();
+});
+document.getElementById('reverseBtn').addEventListener('click', () => {
+  frames.reverse();
+  renderFrameList();
+});
+
+// ── Global delay slider ───────────────────────────────────
+const globalDelaySlider = document.getElementById('globalDelay');
+const globalDelayVal    = document.getElementById('globalDelayVal');
+globalDelaySlider.addEventListener('input', () => {
+  const s = parseFloat(globalDelaySlider.value);
+  globalDelayVal.textContent = s.toFixed(1) + 's';
+});
+globalDelaySlider.addEventListener('change', () => {
+  const ms = Math.round(parseFloat(globalDelaySlider.value) * 1000);
+  frames.forEach(f => f.delay = ms);
+  renderFrameList();
+});
+
+// ── Quality slider ────────────────────────────────────────
+const qualitySlider = document.getElementById('qualitySlider');
+const qualityVal    = document.getElementById('qualityVal');
+qualitySlider.addEventListener('input', () => { qualityVal.textContent = qualitySlider.value; });
+
+// ── Optimize toggle ────────────────────────────────────────
+const optimizeEnabled = document.getElementById('optimizeEnabled');
+const maxDimSlider    = document.getElementById('maxDim');
+const maxDimVal       = document.getElementById('maxDimVal');
+maxDimSlider.addEventListener('input', () => { maxDimVal.textContent = maxDimSlider.value + 'px'; });
+function applyOptimizeState() {
+  const on = optimizeEnabled.checked;
+  const row = document.getElementById('optimizeRow');
+  const qualSec = document.getElementById('qualitySection');
+  row.style.opacity      = on ? '1' : '0.4';
+  row.style.pointerEvents = on ? '' : 'none';
+  qualSec.style.opacity      = on ? '1' : '0.4';
+  qualSec.style.pointerEvents = on ? '' : 'none';
+}
+optimizeEnabled.addEventListener('change', applyOptimizeState);
+applyOptimizeState();
+
+// ── Border toggle ─────────────────────────────────────────
+const borderEnabled = document.getElementById('borderEnabled');
+const borderOptions = document.getElementById('borderOptions');
+borderEnabled.addEventListener('change', () => {
+  borderOptions.classList.toggle('disabled', !borderEnabled.checked);
+});
+
+// ── Border width slider ───────────────────────────────────
+const borderWidthSlider = document.getElementById('borderWidth');
+const borderWidthVal    = document.getElementById('borderWidthVal');
+borderWidthSlider.addEventListener('input', () => { borderWidthVal.textContent = borderWidthSlider.value + 'px'; });
+
+// ── Color pickers ─────────────────────────────────────────
+document.getElementById('borderColor').addEventListener('input', e => {
+  document.getElementById('borderColorHex').textContent = e.target.value;
+});
+
+// ── Logo watermark ────────────────────────────────────────
+const WM_LOGO_KEY = 'gif_maker_logo';
+let wmLogoImg = null;
+const wmEnabledChk = document.getElementById('wmEnabled');
+const wmOptionsDiv  = document.getElementById('wmOptions');
+
+wmEnabledChk.addEventListener('change', () => {
+  wmOptionsDiv.classList.toggle('disabled', !wmEnabledChk.checked);
+});
+
+function setWmLogo(dataUrl, label) {
+  const img = new Image();
+  img.onload = () => {
+    wmLogoImg = img;
+    const nameEl = document.getElementById('wmLogoName');
+    nameEl.textContent = label;
+    nameEl.style.display = '';
+    document.getElementById('wmRememberedStatus').style.display = 'none';
+  };
+  img.src = dataUrl;
+}
+
+// Load remembered logo on page start
+try {
+  const saved = localStorage.getItem(WM_LOGO_KEY);
+  if (saved) {
+    setWmLogo(saved, '(remembered logo)');
+  }
+} catch {}
+
+document.getElementById('wmLogoInput').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    setWmLogo(dataUrl, file.name);
+    try { localStorage.setItem(WM_LOGO_KEY, dataUrl); } catch {}
+  };
+  reader.readAsDataURL(file);
+});
+
+const wmOpacitySlider = document.getElementById('wmOpacity');
+const wmOpacityVal    = document.getElementById('wmOpacityVal');
+wmOpacitySlider.addEventListener('input', () => {
+  wmOpacityVal.textContent = parseFloat(wmOpacitySlider.value).toFixed(2);
+});
+
+const wmSizeSlider = document.getElementById('wmSize');
+const wmSizeVal    = document.getElementById('wmSizeVal');
+wmSizeSlider.addEventListener('input', () => {
+  wmSizeVal.textContent = wmSizeSlider.value + '%';
+});
+
+function drawWatermark(ctx, canvasW, canvasH) {
+  if (!wmEnabledChk.checked || !wmLogoImg) return;
+  const opacity  = parseFloat(wmOpacitySlider.value);
+  const scalePct = parseInt(wmSizeSlider.value) / 100;
+  const pos      = document.getElementById('wmPosition').value;
+  const margin   = Math.max(0, parseInt(document.getElementById('wmMargin').value) || 24);
+
+  const targetW = Math.max(1, Math.round(canvasW * scalePct));
+  const aspect  = wmLogoImg.naturalWidth / wmLogoImg.naturalHeight;
+  const targetH = Math.max(1, Math.round(targetW / aspect));
+
+  let x = margin, y = margin;
+  if      (pos === 'br') { x = canvasW - targetW - margin; y = canvasH - targetH - margin; }
+  else if (pos === 'bl') { x = margin;                     y = canvasH - targetH - margin; }
+  else if (pos === 'tr') { x = canvasW - targetW - margin; y = margin; }
+  else if (pos === 'tl') { x = margin;                     y = margin; }
+  else if (pos === 'c')  { x = (canvasW - targetW) / 2;   y = (canvasH - targetH) / 2; }
+
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(wmLogoImg, x, y, targetW, targetH);
+  ctx.restore();
+}
+
+// ── Text overlay (multiple) ───────────────────────────────
+const TXT_COLOR_KEY = 'gif_txt_color';
+let rememberedTxtColor = (() => { try { return localStorage.getItem(TXT_COLOR_KEY) || '#ffffff'; } catch { return '#ffffff'; } })();
+let txtOverlayIds = [];
+let nextTxtId = 0;
+
+const txtEnabledChk = document.getElementById('txtEnabled');
+const txtOptionsDiv  = document.getElementById('txtOptions');
+txtEnabledChk.addEventListener('change', () => {
+  txtOptionsDiv.classList.toggle('disabled', !txtEnabledChk.checked);
+});
+
+function createTxtSection(id) {
+  const sec = document.createElement('div');
+  sec.id = `txtSec_${id}`;
+  sec.style.cssText = 'border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:10px;background:#fdf8f2;';
+  sec.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;font-weight:600;color:var(--accent)" class="txt-label"></span>
+      <button type="button" class="secondary txt-remove" style="padding:4px 10px;font-size:11px;border-radius:8px;display:none">Remove</button>
+    </div>
+    <input type="text" id="txtContent_${id}" placeholder="Enter text…" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:13px;background:#fff;color:var(--text);">
+    <div class="row2" style="margin-top:8px">
+      <div>
+        <label data-i18n="g.txtPosition">Position</label>
+        <select id="txtPos_${id}">
+          <option value="tc">Top center</option><option value="tl">Top left</option>
+          <option value="tr">Top right</option><option value="bc" selected>Bottom center</option>
+          <option value="bl">Bottom left</option><option value="br">Bottom right</option>
+          <option value="c">Center</option>
+        </select>
+      </div>
+      <div>
+        <label data-i18n="g.txtSize">Size (% height)</label>
+        <div class="flex-row">
+          <input type="range" id="txtSize_${id}" min="1" max="20" step="0.5" value="5">
+          <span class="pill" id="txtSizeVal_${id}">5%</span>
+        </div>
+      </div>
+    </div>
+    <div class="row2" style="margin-top:8px">
+      <div>
+        <div class="color-row">
+          <label data-i18n="g.txtColor">Text colour</label>
+          <input type="color" id="txtColor_${id}" value="#ffffff">
+        </div>
+      </div>
+      <div>
+        <label class="toggle-row" style="font-size:12px;margin-bottom:4px">
+          <input type="checkbox" id="txtBg_${id}">
+          <span data-i18n="g.txtBg">Background</span>
+        </label>
+        <input type="color" id="txtBgColor_${id}" value="#000000" style="display:none;width:48px;height:32px;border-radius:8px;border:1px solid var(--border);padding:2px;cursor:pointer">
+      </div>
+    </div>`;
+
+  const colorPicker = sec.querySelector(`#txtColor_${id}`);
+  colorPicker.value = rememberedTxtColor;
+  colorPicker.addEventListener('change', () => {
+    rememberedTxtColor = colorPicker.value;
+    try { localStorage.setItem(TXT_COLOR_KEY, rememberedTxtColor); } catch {}
+  });
+
+  const sizeSlider = sec.querySelector(`#txtSize_${id}`);
+  const sizeBadge  = sec.querySelector(`#txtSizeVal_${id}`);
+  sizeSlider.addEventListener('input', () => { sizeBadge.textContent = parseFloat(sizeSlider.value) + '%'; });
+
+  const bgChk    = sec.querySelector(`#txtBg_${id}`);
+  const bgPicker = sec.querySelector(`#txtBgColor_${id}`);
+  bgChk.addEventListener('change', () => { bgPicker.style.display = bgChk.checked ? 'block' : 'none'; });
+
+  sec.querySelector('.txt-remove').addEventListener('click', () => removeTxtOverlay(id));
+  return sec;
+}
+
+function refreshTxtLabels() {
+  txtOverlayIds.forEach((id, i) => {
+    const lbl = document.querySelector(`#txtSec_${id} .txt-label`);
+    if (lbl) lbl.textContent = `Text ${i + 1}`;
+    const rm = document.querySelector(`#txtSec_${id} .txt-remove`);
+    if (rm) rm.style.display = txtOverlayIds.length > 1 ? 'inline-flex' : 'none';
+  });
+}
+
+function addTxtOverlay() {
+  const id = nextTxtId++;
+  txtOverlayIds.push(id);
+  document.getElementById('txtOverlayList').appendChild(createTxtSection(id));
+  refreshTxtLabels();
+  if (window.applyLang) window.applyLang(localStorage.getItem('ui_lang') || 'en');
+}
+
+function removeTxtOverlay(id) {
+  txtOverlayIds = txtOverlayIds.filter(x => x !== id);
+  document.getElementById(`txtSec_${id}`)?.remove();
+  refreshTxtLabels();
+}
+
+document.getElementById('addTxtBtn').addEventListener('click', addTxtOverlay);
+addTxtOverlay(); // start with one entry
+
+function drawAllTextOverlays(ctx, canvasW, canvasH, frame) {
+  if (!txtEnabledChk.checked) return;
+  if (frame && frame.showText === false) return;
+  for (const id of txtOverlayIds) {
+    const text = (document.getElementById(`txtContent_${id}`)?.value || '').trim();
+    if (!text) continue;
+    const fontSizePct = parseFloat(document.getElementById(`txtSize_${id}`)?.value || '5') / 100;
+    const fontSize    = Math.max(8, Math.round(canvasH * fontSizePct));
+    const padding     = Math.round(fontSize * 0.4);
+    const mgn         = Math.round(fontSize * 0.5);
+    const pos         = document.getElementById(`txtPos_${id}`)?.value || 'bc';
+    const color       = document.getElementById(`txtColor_${id}`)?.value || '#ffffff';
+    const bgEnabled   = document.getElementById(`txtBg_${id}`)?.checked || false;
+    const bgColor     = document.getElementById(`txtBgColor_${id}`)?.value || '#000000';
+    ctx.save();
+    ctx.font = `bold ${fontSize}px system-ui,-apple-system,Arial,sans-serif`;
+    ctx.textBaseline = 'middle';
+    const textW = ctx.measureText(text).width;
+    const boxW = textW + padding * 2, boxH = fontSize + padding * 2;
+    let bx, by;
+    if      (pos==='tc'){bx=(canvasW-boxW)/2;       by=mgn;}
+    else if (pos==='tl'){bx=mgn;                    by=mgn;}
+    else if (pos==='tr'){bx=canvasW-boxW-mgn;       by=mgn;}
+    else if (pos==='bc'){bx=(canvasW-boxW)/2;       by=canvasH-boxH-mgn;}
+    else if (pos==='bl'){bx=mgn;                    by=canvasH-boxH-mgn;}
+    else if (pos==='br'){bx=canvasW-boxW-mgn;       by=canvasH-boxH-mgn;}
+    else                {bx=(canvasW-boxW)/2;       by=(canvasH-boxH)/2;}
+    if (bgEnabled) { ctx.fillStyle=bgColor; ctx.fillRect(bx,by,boxW,boxH); }
+    ctx.fillStyle = color;
+    ctx.fillText(text, bx + padding, by + boxH / 2);
+    ctx.restore();
+  }
+}
+
+// ── Loop select ───────────────────────────────────────────
+document.getElementById('loopSelect').addEventListener('change', function () {
+  document.getElementById('loopCustom').style.display = this.value === '-1' ? 'block' : 'none';
+});
+
+// ── Size preset ───────────────────────────────────────────
+document.getElementById('sizePreset').addEventListener('change', function () {
+  document.getElementById('customSizeRow').style.display = this.value === 'custom' ? 'grid' : 'none';
+});
+
+// ── Compute output dimensions ─────────────────────────────
+const SIZE_PRESETS = {
+  ig_story:    { w: 1080, h: 1920 },
+  ig_square:   { w: 1080, h: 1080 },
+  ig_portrait: { w: 1080, h: 1350 },
+  ig_landscape:{ w: 1080, h:  566 },
+  fb_post:     { w: 1200, h:  630 },
+  fb_story:    { w: 1080, h: 1920 },
+  tw_post:     { w: 1200, h:  675 },
+  yt_thumb:    { w: 1280, h:  720 },
+};
+
+function getOutputSize() {
+  const preset = document.getElementById('sizePreset').value;
+  if (!frames.length) return { w: 1080, h: 1080 };
+  let w, h;
+  if (preset in SIZE_PRESETS) {
+    w = SIZE_PRESETS[preset].w;
+    h = SIZE_PRESETS[preset].h;
+  } else if (preset === 'custom') {
+    w = parseInt(document.getElementById('outWidth').value) || 1080;
+    h = parseInt(document.getElementById('outHeight').value) || 1080;
+  } else { // match_first
+    w = frames[0].img.naturalWidth;
+    h = frames[0].img.naturalHeight;
+  }
+  // Optimize: scale down proportionally if over maxDim
+  if (document.getElementById('optimizeEnabled').checked) {
+    const maxDim = parseInt(document.getElementById('maxDim').value) || 800;
+    if (Math.max(w, h) > maxDim) {
+      const scale = maxDim / Math.max(w, h);
+      w = Math.max(1, Math.round(w * scale));
+      h = Math.max(1, Math.round(h * scale));
+    }
+  }
+  return { w, h };
+}
+
+// ── Draw a single frame onto the canvas ──────────────────
+// borders = { top, right, bottom, left } in pixels
+function drawFrame(ctx, img, outW, outH, borders, borderColor, bgColor, fit) {
+  const { top, right, bottom, left } = borders;
+  const innerX = left;
+  const innerY = top;
+  const innerW = outW - left - right;
+  const innerH = outH - top - bottom;
+
+  // Draw border areas
+  ctx.fillStyle = borderColor;
+  if (top    > 0) ctx.fillRect(0,          0,           outW,  top);
+  if (bottom > 0) ctx.fillRect(0,          outH - bottom, outW,  bottom);
+  if (left   > 0) ctx.fillRect(0,          top,         left,  innerH);
+  if (right  > 0) ctx.fillRect(outW - right, top,         right, innerH);
+
+  // Background fill (inner area)
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(innerX, innerY, innerW, innerH);
+
+  const sw = img.naturalWidth;
+  const sh = img.naturalHeight;
+  let dx, dy, dw, dh;
+
+  if (fit === 'stretch') {
+    dx = innerX; dy = innerY; dw = innerW; dh = innerH;
+  } else if (fit === 'cover') {
+    const scale = Math.max(innerW / sw, innerH / sh);
+    dw = sw * scale; dh = sh * scale;
+    dx = innerX + (innerW - dw) / 2;
+    dy = innerY + (innerH - dh) / 2;
+  } else { // contain
+    const scale = Math.min(innerW / sw, innerH / sh);
+    dw = sw * scale; dh = sh * scale;
+    dx = innerX + (innerW - dw) / 2;
+    dy = innerY + (innerH - dh) / 2;
+  }
+
+  // Clip to inner area so cover mode never paints over the border
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(innerX, innerY, innerW, innerH);
+  ctx.clip();
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+// ── Generate GIF ──────────────────────────────────────────
+document.getElementById('generateBtn').addEventListener('click', generateGIF);
+
+async function generateGIF() {
+  if (!frames.length) { alert('Please add at least one image.'); return; }
+  if (!gifWorkerUrl) {
+    alert('GIF worker not ready yet — please wait a moment and try again.');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  showProgress(0, 'Initialising…');
+  resetPreview();
+
+  const { w, h } = getOutputSize();
+  const borderOn   = document.getElementById('borderEnabled').checked;
+  const bp         = borderOn ? parseInt(document.getElementById('borderWidth').value) : 0;
+  const sides      = borderOn ? document.getElementById('borderSides').value : 'all';
+  const borders    = {
+    top:    bp > 0 && ['all','tb','t'].includes(sides) ? bp : 0,
+    bottom: bp > 0 && ['all','tb','b'].includes(sides) ? bp : 0,
+    left:   bp > 0 && ['all','lr','l'].includes(sides) ? bp : 0,
+    right:  bp > 0 && ['all','lr','r'].includes(sides) ? bp : 0,
+  };
+  const borderCol = document.getElementById('borderColor').value;
+  const bgCol     = '#ffffff';
+  const fit       = document.getElementById('objectFit').value;
+  // gif.js quality: 1=best, 30=worst. When optimize is off, use quality=1 (best).
+  const optimize  = document.getElementById('optimizeEnabled').checked;
+  const quality   = optimize ? 11 - parseInt(document.getElementById('qualitySlider').value) : 1;
+  const dithering = false;
+  const loopRaw   = document.getElementById('loopSelect').value;
+  const repeat    = loopRaw === '-1'
+    ? parseInt(document.getElementById('loopCustom').value) || 1
+    : parseInt(loopRaw);
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+
+  const gif = new GIF({
+    workers:    4,
+    quality,
+    workerScript: gifWorkerUrl,
+    width:      w,
+    height:     h,
+    repeat,
+    dither:     dithering === 'false' ? false : dithering,
+  });
+
+  frames.forEach((f, i) => {
+    showProgress(Math.round(i / frames.length * 40), `Rendering frame ${i + 1} / ${frames.length}…`);
+    ctx.clearRect(0, 0, w, h);
+    drawFrame(ctx, f.img, w, h, borders, borderCol, bgCol, fit);
+    drawWatermark(ctx, w, h);
+    drawAllTextOverlays(ctx, w, h, f);
+    gif.addFrame(canvas, { copy: true, delay: f.delay });
+  });
+
+  showProgress(40, 'Encoding GIF…');
+
+  gif.on('progress', p => showProgress(40 + Math.round(p * 58), `Encoding… ${Math.round(p * 100)}%`));
+
+  gif.on('finished', blob => {
+    const url = URL.createObjectURL(blob);
+    const img  = document.getElementById('previewImg');
+    img.src    = url;
+    img.style.display = 'block';
+    document.getElementById('previewEmpty').style.display = 'none';
+
+    const dl = document.getElementById('downloadLink');
+    dl.href     = url;
+    dl.download = 'urban_est_prty.gif';
+
+    const kb = (blob.size / 1024).toFixed(1);
+    document.getElementById('gifSize').textContent = kb + ' KB';
+
+    document.getElementById('downloadStrip').style.display = 'flex';
+    hideProgress();
+    btn.disabled = false;
+    showProgress(100, 'Done!');
+    setTimeout(hideProgress, 1200);
+  });
+
+  gif.render();
+}
+
+// ── Download MP4 ──────────────────────────────────────────
+document.getElementById('downloadMp4Btn').addEventListener('click', generateMP4);
+
+async function generateMP4() {
+  if (!frames.length) { alert('Please add at least one image.'); return; }
+
+  const btn = document.getElementById('downloadMp4Btn');
+  btn.disabled = true;
+  showProgress(0, 'Preparing video…');
+
+  let { w, h } = getOutputSize();
+  // H.264 requires even dimensions
+  if (w % 2 !== 0) w--;
+  if (h % 2 !== 0) h--;
+
+  const borderOn = document.getElementById('borderEnabled').checked;
+  const bp       = borderOn ? parseInt(document.getElementById('borderWidth').value) : 0;
+  const sides    = borderOn ? document.getElementById('borderSides').value : 'all';
+  const borders  = {
+    top:    bp > 0 && ['all','tb','t'].includes(sides) ? bp : 0,
+    bottom: bp > 0 && ['all','tb','b'].includes(sides) ? bp : 0,
+    left:   bp > 0 && ['all','lr','l'].includes(sides) ? bp : 0,
+    right:  bp > 0 && ['all','lr','r'].includes(sides) ? bp : 0,
+  };
+  const borderCol = document.getElementById('borderColor').value;
+  const bgCol     = '#ffffff';
+  const fit       = document.getElementById('objectFit').value;
+
+  // ── WebCodecs path (Chrome 94+): genuine H.264 MP4, no streaming needed ──
+  if (typeof VideoEncoder !== 'undefined') {
+    try {
+      showProgress(5, 'Loading MP4 encoder…');
+      const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5/+esm');
+
+      const fps = 25;
+      const frameDurationUs = Math.round(1_000_000 / fps);
+
+      const muxerTarget = new ArrayBufferTarget();
+      const muxer = new Muxer({
+        target: muxerTarget,
+        video: { codec: 'avc', width: w, height: h },
+        fastStart: 'in-memory',
+      });
+
+      const encoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: e => { throw e; },
+      });
+      encoder.configure({
+        codec: 'avc1.42001f',           // H.264 Baseline 3.1
+        width: w,
+        height: h,
+        bitrate: Math.min(4_000_000, Math.max(1_500_000, Math.round(w * h / 200))),
+        framerate: fps,
+        avc: { format: 'avc' },         // AVCC format required by mp4-muxer
+      });
+
+      // Off-screen canvas — no DOM attachment needed for WebCodecs
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      let timestamp = 0;
+      let totalEncoded = 0;
+
+      for (let i = 0; i < frames.length; i++) {
+        const f = frames[i];
+        showProgress(5 + Math.round(i / frames.length * 88), `Encoding frame ${i + 1} / ${frames.length}…`);
+
+        ctx.clearRect(0, 0, w, h);
+        drawFrame(ctx, f.img, w, h, borders, borderCol, bgCol, fit);
+        drawWatermark(ctx, w, h);
+        drawAllTextOverlays(ctx, w, h, f);
+
+        // Repeat this image for its duration at the chosen framerate
+        const numFrames = Math.max(1, Math.round(f.delay / 1000 * fps));
+        for (let j = 0; j < numFrames; j++) {
+          const vf = new VideoFrame(canvas, { timestamp, duration: frameDurationUs });
+          encoder.encode(vf, { keyFrame: totalEncoded === 0 });
+          vf.close();
+          timestamp    += frameDurationUs;
+          totalEncoded += 1;
+          // Yield to keep UI responsive and avoid overfilling encoder queue
+          if (totalEncoded % 20 === 0) await new Promise(r => setTimeout(r, 0));
+        }
+      }
+
+      showProgress(95, 'Finalizing MP4…');
+      await encoder.flush();
+      muxer.finalize();
+
+      const blob = new Blob([muxerTarget.buffer], { type: 'video/mp4' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'urban_est_prty.mp4';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+      showProgress(100, 'Done!');
+      setTimeout(hideProgress, 1200);
+      btn.disabled = false;
+      return;
+    } catch (e) {
+      console.warn('WebCodecs MP4 encoding failed, falling back to WebM:', e);
+      showProgress(0, 'Falling back to WebM…');
+    }
+  }
+
+  // ── Fallback: MediaRecorder (WebM) ────────────────────────────────────────
+  // Position canvas off-screen horizontally at y=0.
+  // Never use opacity:0 or z-index:-9999 — those prevent the GPU compositor
+  // from rendering the canvas into the captureStream, producing a black video.
+  const canvas = document.createElement('canvas');
+  canvas.width  = w;
+  canvas.height = h;
+  canvas.style.cssText = 'position:fixed;left:-99999px;top:0;width:1px;height:1px;pointer-events:none;';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const f0 = frames[0];
+  drawFrame(ctx, f0.img, w, h, borders, borderCol, bgCol, fit);
+  drawWatermark(ctx, w, h);
+  drawAllTextOverlays(ctx, w, h, f0);
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  const mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    .find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+  const bitrate = Math.min(4_000_000, Math.max(1_000_000, Math.round(w * h / 300)));
+
+  const stream   = canvas.captureStream(30);
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: bitrate });
+  const chunks   = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.start(200);
+
+  for (let i = 0; i < frames.length; i++) {
+    const f = frames[i];
+    showProgress(Math.round((i / frames.length) * 90), `Recording frame ${i + 1} / ${frames.length}…`);
+    ctx.clearRect(0, 0, w, h);
+    drawFrame(ctx, f.img, w, h, borders, borderCol, bgCol, fit);
+    drawWatermark(ctx, w, h);
+    drawAllTextOverlays(ctx, w, h, f);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await new Promise(r => setTimeout(r, f.delay));
+  }
+
+  // Post-roll: hold last frame for extra ticks so the WebM encoder writes a
+  // correct end-timestamp and the final frame plays its full duration.
+  const lastF = frames[frames.length - 1];
+  for (let t = 0; t < 4; t++) {
+    ctx.clearRect(0, 0, w, h);
+    drawFrame(ctx, lastF.img, w, h, borders, borderCol, bgCol, fit);
+    drawWatermark(ctx, w, h);
+    drawAllTextOverlays(ctx, w, h, lastF);
+    await new Promise(r => requestAnimationFrame(r));
+  }
+
+  await new Promise(resolve => {
+    recorder.onstop = () => {
+      document.body.removeChild(canvas);
+      const blob = new Blob(chunks, { type: mimeType });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'urban_est_prty.webm';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      resolve();
+    };
+    recorder.stop();
+  });
+
+  showProgress(100, 'Done!');
+  setTimeout(hideProgress, 1200);
+  btn.disabled = false;
+}
+
+// ── Progress helpers ──────────────────────────────────────
+function showProgress(pct, label) {
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('barFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+function hideProgress() {
+  document.getElementById('progressWrap').style.display = 'none';
+}
+function resetPreview() {
+  const img = document.getElementById('previewImg');
+  if (img.src) { URL.revokeObjectURL(img.src); img.src = ''; }
+  img.style.display = 'none';
+  document.getElementById('previewEmpty').style.display = '';
+  document.getElementById('downloadStrip').style.display = 'none';
+  document.getElementById('gifSize').textContent = '';
+}
+
+// ── Init ──────────────────────────────────────────────────
+renderFrameList();
+</script>
+</body>
+</html>
