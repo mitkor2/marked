@@ -316,8 +316,8 @@ async function loadTemplate(which) {
   }
 
   const url = which === 'pepa'
-    ? 'Pepa%20Petrova%20Advisory.html'
-    : 'Urban%20Estate%20.html';
+    ? 'pepa-petrova-advisory.html'
+    : 'urban-estate.html';
 
   rawHtml = await fetch(url).then(r => r.text());
   templateDom = new DOMParser().parseFromString(rawHtml, 'text/html');
