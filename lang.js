@@ -15,7 +15,6 @@
     en: {
       // Navigation
       'nav.watermark': 'Watermark Tool',
-      'nav.cleaning': 'Cleaning Tool',
       'nav.collage': 'Collage',
       'nav.email': 'Email Campaigns',
       'nav.gif': 'GIF Maker',
@@ -227,7 +226,6 @@
     bg: {
       // Navigation
       'nav.watermark': 'Воден знак',
-      'nav.cleaning': 'Почистване',
       'nav.collage': 'Колаж',
       'nav.email': 'Имейл кампании',
       'nav.gif': 'GIF Мейкър',
