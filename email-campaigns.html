@@ -118,7 +118,6 @@
       <a href="index.html" class="nav-link" data-i18n="nav.watermark">Watermark Tool</a>
       <a href="collage.html" class="nav-link" data-i18n="nav.collage">Collage</a>
       <a href="gif-maker.html" class="nav-link" data-i18n="nav.gif">GIF Maker</a>
-      <a href="email-campaigns.html" class="nav-link active" data-i18n="nav.email">Email Campaigns</a>
       <div class="lang-switcher">
         <button class="lang-btn" data-lang="en">EN</button>
         <button class="lang-btn" data-lang="bg">BG</button>
@@ -510,7 +509,7 @@ function handleImageUpload(e, idx) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    compressImage(ev.target.result, { maxPx: 480, quality: 0.7, targetBytes: 35 * 1024 }, dataUrl => {
+    compressImage(ev.target.result, { maxPx: 360, quality: 0.7, targetBytes: 20 * 1024 }, dataUrl => {
       imageUploads[idx] = dataUrl;
       const slotEl = document.getElementById(`slot_${idx}`);
       const imgEl  = document.getElementById(`slotImg_${idx}`);
@@ -1147,7 +1146,7 @@ function handleExtraImageUpload(e, secId, slotKey) {
   if (!sec) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    compressImage(ev.target.result, { maxPx: 480, quality: 0.7, targetBytes: 35 * 1024 }, dataUrl => {
+    compressImage(ev.target.result, { maxPx: 360, quality: 0.7, targetBytes: 20 * 1024 }, dataUrl => {
       sec.imgUploads[slotKey] = dataUrl;
       const imgEl  = document.getElementById(`xslotImg_${secId}_${slotKey}`);
       const slotEl = document.getElementById(`xslot_${secId}_${slotKey}`);
